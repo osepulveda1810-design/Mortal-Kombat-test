@@ -2,13 +2,12 @@
 <html lang="es">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sub-Zero - Horizontal Fullscreen</title>
+    <title>Sub-Zero - Pantalla Completa</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-touch-callout: none; }
         
         body {
-            background-color: #1a1a2e; display: flex; justify-content: center; align-items: center;
-            /* Usamos 100dvh para que se ajuste cuando el navegador oculta la barra */
+            background-color: #16213e; display: flex; justify-content: center; align-items: center;
             height: 100dvh; width: 100vw; overflow: hidden; font-family: sans-serif; touch-action: none; position: fixed;
         }
 
@@ -33,32 +32,22 @@
             #game-container { display: flex !important; }
         }
 
-        /* --- CONTENEDOR DEL JUEGO --- */
+        /* --- CONTENEDOR DEL JUEGO (ESCENARIO COMPLETO) --- */
         #game-container {
-            display: flex; flex-direction: column;
+            display: flex;
             width: 100vw; height: 100dvh;
-            max-width: 800px;
-            padding: 5px; background-color: #16213e;
+            /* Eliminamos el límite de 500px y el padding para que ocupe TODO */
+            max-width: none; padding: 0; background-color: #16213e;
         }
 
-        /* --- WRAPPER Y BOTÓN DE FULLSCREEN --- */
         #canvas-wrapper {
-            flex: 1; display: flex; justify-content: center; align-items: center;
-            background-color: #1a1a2e; border-radius: 10px; margin-bottom: 5px;
-            border: 2px solid #0f3460; overflow: hidden;
-            width: 100%; height: 100%; position: relative;
+            position: relative; /* Clave para que los botones floten sobre el canvas */
+            display: flex; justify-content: center; align-items: center;
+            width: 100%; height: 100%;
+            background-color: #16213e; 
+            overflow: hidden;
         }
         
-        /* Botón para forzar pantalla completa y bloquear navegador */
-        #btn-fullscreen {
-            position: absolute; top: 10px; left: 10px;
-            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; font-size: 20px; width: 40px; height: 40px;
-            border-radius: 8px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 10; touch-action: manipulation;
-        }
-        #btn-fullscreen:active { background: rgba(78, 204, 163, 0.4); border-color: #4ecca3; }
-
         canvas { 
             display: block; 
             width: 100%; height: 100%;
@@ -66,25 +55,43 @@
             background-color: #16213e; 
         }
 
-        /* --- CONTROLES TÁCTILES CORREGIDOS --- */
+        /* --- BOTÓN DE PANTALLA COMPLETA (FLOTANDO EN EL ESCENARIO) --- */
+        #btn-fullscreen {
+            position: absolute; top: 15px; left: 15px;
+            background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; font-size: 20px; width: 40px; height: 40px;
+            border-radius: 8px; display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 10; touch-action: manipulation;
+        }
+        #btn-fullscreen:active { background: rgba(78, 204, 163, 0.4); border-color: #4ecca3; }
+
+        /* --- CONTROLES TÁCTILES (FLOTANDO SOBRE EL CANVAS) --- */
         #controls {
-            display: flex; justify-content: space-between; align-items: center;
-            /* Cambiamos altura fija por flex: 0, min-height y padding dinámico */
-            flex: 0 0 auto; 
-            min-height: 110px;
-            /* bottom environment para evitar la barra de gestos en Android/iOS */
-            padding: 5px 15px calc(15px + env(safe-area-inset-bottom)); 
+            position: absolute;
+            bottom: max(15px, env(safe-area-inset-bottom, 15px));
+            left: 0; width: 100%; padding: 0 15px;
+            display: flex; justify-content: space-between;
+            align-items: flex-end; z-index: 10;
+            /* Permite hacer clic a través del espacio vacío, pero los botones siguen siendo cliqueables */
+            pointer-events: none; 
+        }
+        
+        #controls .control-group, #controls .btn {
+            pointer-events: auto; /* Reactivamos el click/touch SOLO en los botones */
         }
 
         .btn {
-            width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 24px;
-            display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.3);
+            background: rgba(20, 30, 50, 0.6); /* Fondo un poco más oscuro para resaltar */
+            backdrop-filter: blur(2px);
+            color: #fff; font-size: 24px;
+            display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.8);
             transition: all 0.1s; touch-action: none; cursor: pointer;
         }
-        .btn:active, .btn.active { background: rgba(78, 204, 163, 0.4); border-color: rgba(78, 204, 163, 0.8); transform: scale(0.9); }
-        #btn-jump { width: 90px; height: 90px; background: rgba(255, 50, 50, 0.2); border-color: rgba(255, 50, 50, 0.5); font-weight: bold; font-size: 18px; }
-        #btn-jump:active, #btn-jump.active { background: rgba(255, 50, 50, 0.5); }
+        .btn:active, .btn.active { background: rgba(78, 204, 163, 0.6); border-color: rgba(78, 204, 163, 1); transform: scale(0.9); }
+        
+        #btn-jump { width: 90px; height: 90px; background: rgba(200, 30, 30, 0.4); border-color: rgba(255, 50, 50, 0.6); font-weight: bold; font-size: 18px; }
+        #btn-jump:active, #btn-jump.active { background: rgba(255, 50, 50, 0.8); }
         
         @media (max-width: 500px) {
             .btn { width: 60px; height: 60px; font-size: 22px; }
@@ -93,7 +100,6 @@
         @media (max-width: 400px) {
             .btn { width: 55px; height: 55px; font-size: 20px; }
             #btn-jump { width: 70px; height: 70px; }
-            #controls { min-height: 90px; }
         }
     </style>
 </head>
@@ -109,14 +115,16 @@
         <div id="canvas-wrapper">
             <button id="btn-fullscreen">⛶</button>
             <canvas id="gameCanvas"></canvas>
-        </div>
-        <div id="controls">
-            <div class="control-group">
-                <button class="btn" id="btn-left">◀</button>
-                <button class="btn" id="btn-right">▶</button>
-            </div>
-            <div class="control-group">
-                <button class="btn" id="btn-jump">SALTO</button>
+            
+            <!-- Los controles ahora están DENTRO del #canvas-wrapper -->
+            <div id="controls">
+                <div class="control-group">
+                    <button class="btn" id="btn-left">◀</button>
+                    <button class="btn" id="btn-right">▶</button>
+                </div>
+                <div class="control-group">
+                    <button class="btn" id="btn-jump">SALTO</button>
+                </div>
             </div>
         </div>
     </div>
@@ -148,30 +156,24 @@
         const jumpFrameTimes = [100, 100, 100, 100];
         const keys = { right: false, left: false, up: false };
 
-        // --- NUEVA FUNCIÓN PARA FORZAR FULLSCREEN Y BLOQUEAR ---
+        // --- FUNCIÓN PARA FORZAR FULLSCREEN ---
         const fullscreenBtn = document.getElementById('btn-fullscreen');
         
         async function enterFullscreen() {
             try {
-                // 1. Bloquear orientación horizontal (si el navegador lo permite)
                 if (screen.orientation && screen.orientation.lock) {
                     await screen.orientation.lock('landscape');
                 }
-                // 2. Forzar pantalla completa (oculta la barra y las pestañas)
                 if (document.fullscreenElement === null && document.documentElement.requestFullscreen) {
                     await document.documentElement.requestFullscreen();
                 }
-            } catch (err) {
-                // Si algún método falla, simplemente ignoramos. El CSS ya maneja el layout.
-                console.log("Fullscreen u orientación bloqueada por el navegador:", err);
-            }
+            } catch (err) { }
         }
 
-        // Activar al hacer clic en el botón de la esquina
         fullscreenBtn.addEventListener('click', enterFullscreen);
         fullscreenBtn.addEventListener('touchstart', (e) => { e.preventDefault(); enterFullscreen(); });
 
-        // --- CONTROLES DE TECLADO ---
+        // --- CONTROLES ---
         document.addEventListener('keydown', (e) => {
             if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
             if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
@@ -183,7 +185,6 @@
             if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') keys.up = false;
         });
 
-        // --- CONTROLES TÁCTILES ---
         function setupTouchButton(elementId, keyName) {
             const el = document.getElementById(elementId);
             el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; el.classList.add('active'); });
