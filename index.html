@@ -165,6 +165,7 @@
         const jumpFrameOffset = [0, 0, 0, 0];
 
         let jumpTimer = 0;
+        let isJumping = false;
         let isLanding = false;
         let landingTimer = 0;
         // --- TIEMPOS DE SALTO: frame3 se mantiene mientras esté en el aire; el 4to valor es cuánto dura el frame de aterrizaje ---
@@ -306,11 +307,12 @@
 
             const floorY = playerLaneY;
 
-            const wasOnGround = playerY >= floorY;
+            const wasOnGround = !isJumping;
             if(keys.up && wasOnGround) {
                 velocityY = jumpStrength;
                 jumpTimer = 0;
                 isLanding = false;
+                isJumping = true;
                 lastJumpFrameTime = time;
                 currentSprite = jumpSprite;
                 currentFrame = 0;
@@ -320,11 +322,21 @@
             else if (keys.right) { velocityX = speed; facingRight = true; } 
             else { velocityX = 0; }
 
-            velocityY += gravity;
             playerX += velocityX;
-            playerY += velocityY;
 
-            const isInAir = playerY < floorY - 1;
+            if (isJumping) {
+                velocityY += gravity;
+                playerY += velocityY;
+                if (playerY >= floorY) {
+                    playerY = floorY;
+                    velocityY = 0;
+                    isJumping = false;
+                }
+            } else {
+                playerY = floorY;
+            }
+
+            const isInAir = isJumping;
 
             if (isInAir) {
                 if (currentSprite !== jumpSprite) {
@@ -342,8 +354,6 @@
                 else currentFrame = 2;
 
             } else {
-                if (playerY > floorY) { playerY = floorY; velocityY = 0; }
-
                 if (currentSprite === jumpSprite && !isLanding) {
                     // Momento exacto de tocar el suelo: mostrar el frame 4 (aterrizaje)
                     isLanding = true;
