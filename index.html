@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#16213e">
+    <link rel="manifest" href="manifest.json">
     <title>Sub-Zero Adventure</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-touch-callout: none; }
@@ -17,7 +19,23 @@
             max-width: none; padding: 0; background-color: #16213e;
             position: fixed;
             top: 0; left: 0;
-            transform-origin: center center;
+            transform-origin: left top;
+        }
+
+        /* Bloqueo real por CSS: si el teléfono está físicamente en vertical,
+           el contenedor se rota 90° matemáticamente para llenar toda la
+           pantalla en horizontal. No depende de JS ni de si el auto-rotate
+           del sistema está activo o no: se aplica siempre que el viewport
+           sea más alto que ancho. */
+        @media screen and (orientation: portrait) {
+            #game-container {
+                width: 100vh;
+                height: 100vw;
+                position: absolute;
+                top: 0; left: 100%;
+                transform-origin: left top;
+                transform: rotate(90deg);
+            }
         }
 
         #canvas-wrapper {
@@ -367,36 +385,35 @@
         let imagesLoaded = 0;
         const totalImages = 7;
 
-        // --- FORZAR HORIZONTAL SIEMPRE ---
-        function forceLandscape() {
-            const iw = window.innerWidth;
-            const ih = window.innerHeight;
-            const isPortrait = ih > iw;
+        // --- BLOQUEO DE ORIENTACIÓN HORIZONTAL ---
+        // La rotación visual ya la resuelve el CSS (@media orientation: portrait)
+        // de forma automática, sin depender de JS ni del auto-rotate del sistema.
+        // Aquí solo mantenemos la resolución interna del canvas sincronizada.
+        function lockOrientation() {
+            // Extra para cuando se instala como PWA/TWA: intenta bloquear también
+            // a nivel de sistema. Si el navegador no lo permite, no importa,
+            // el CSS ya se encarga de que siempre se vea horizontal.
+            try {
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            } catch (e) { /* API no soportada, se ignora */ }
+        }
 
-            if (isPortrait) {
-                // En portrait: rotar 90deg y centrar
-                gameContainer.style.width = ih + 'px';
-                gameContainer.style.height = iw + 'px';
-                gameContainer.style.top = '50%';
-                gameContainer.style.left = '50%';
-                gameContainer.style.transform = 'translate(-50%, -50%) rotate(90deg)';
-            } else {
-                // En landscape: normal
-                gameContainer.style.width = '100vw';
-                gameContainer.style.height = '100dvh';
-                gameContainer.style.top = '0';
-                gameContainer.style.left = '0';
-                gameContainer.style.transform = 'none';
-            }
+        function forceLandscape() {
             setupCanvas();
         }
 
         function checkImagesLoaded() {
             imagesLoaded++;
             if (imagesLoaded === totalImages) {
+                lockOrientation();
                 forceLandscape();
                 window.addEventListener('resize', forceLandscape);
-                window.addEventListener('orientationchange', () => setTimeout(forceLandscape, 100));
+                window.addEventListener('orientationchange', () => {
+                    lockOrientation();
+                    setTimeout(forceLandscape, 100);
+                });
                 requestAnimationFrame(animate);
             }
         }
@@ -812,7 +829,7 @@
                 // Instrucciones
                 ctx.fillStyle = 'rgba(255,255,255,0.5)';
                 ctx.font = '11px sans-serif';
-                
+
             }
 
             requestAnimationFrame(animate);
