@@ -368,7 +368,8 @@ let player = {
     facingRight: true, scale: 1, health: 100, maxHealth: 100, isJumping: false, isLanding: false,
     landingTimer: 0, isAttacking: false, attackKind: null, attackTimer: 0, lastAttackFrameTime: 0,
     attackRequested: null, damageDealt: false, punchTapCount: 0, punchLastTapTime: 0, punchDoubleTapWindow: 350,
-    kickTapCount: 0, kickLastTapTime: 0, kickDoubleTapWindow: 350, invulnerable: 0, flashTimer: 0
+    kickTapCount: 0, kickLastTapTime: 0, kickDoubleTapWindow: 350, invulnerable: 0, flashTimer: 0,
+    comboQueued: null
 };
 
 let baseDrawWidth = 0, baseDrawHeight = 0, laneTop = 0, laneBottom = 0, playerLaneY = 0;
@@ -495,7 +496,7 @@ function spawnBoss() {
 }
 
 function requestAttack(kind) {
-    if (player.isAttacking || levelComplete) return;
+    if (levelComplete) return;
     const now = performance.now();
     if (player.isJumping && !player.isAttacking) {
         if (kind === 'punch') { player.attackRequested = 'punchAir'; player.punchTapCount = 0; return; }
@@ -505,14 +506,20 @@ function requestAttack(kind) {
         if (now - player.punchLastTapTime < player.punchDoubleTapWindow) player.punchTapCount++;
         else player.punchTapCount = 1;
         player.punchLastTapTime = now;
-        if (player.punchTapCount >= 2) { player.attackRequested = 'punch2'; player.punchTapCount = 0; }
-        else if (!player.isAttacking) player.attackRequested = 'punch';
+        if (player.punchTapCount >= 2) {
+            player.punchTapCount = 0;
+            if (!player.isAttacking) player.attackRequested = 'punch2';
+            else player.comboQueued = 'punch2';
+        } else if (!player.isAttacking) { player.attackRequested = 'punch'; }
     } else if (kind === 'kick') {
         if (now - player.kickLastTapTime < player.kickDoubleTapWindow) player.kickTapCount++;
         else player.kickTapCount = 1;
         player.kickLastTapTime = now;
-        if (player.kickTapCount >= 2) { player.attackRequested = 'kick2'; player.kickTapCount = 0; }
-        else if (!player.isAttacking) player.attackRequested = 'kick';
+        if (player.kickTapCount >= 2) {
+            player.kickTapCount = 0;
+            if (!player.isAttacking) player.attackRequested = 'kick2';
+            else player.comboQueued = 'kick2';
+        } else if (!player.isAttacking) { player.attackRequested = 'kick'; }
     }
 }
 
@@ -1203,6 +1210,7 @@ function animate(time) {
             const totalAttackTime = times.reduce((a, b) => a + b, 0);
             if (player.attackTimer >= totalAttackTime) {
                 player.isAttacking = false; player.attackKind = null;
+                if (player.comboQueued) { player.attackRequested = player.comboQueued; player.comboQueued = null; }
                 if (player.isJumping) { currentSprite = playerSprites.jump; currentFrame = 2; }
                 else { currentSprite = (keys.left || keys.right || keys.forward || keys.backward) ? playerSprites.walk : playerSprites.idle; currentFrame = 0; }
                 lastTime = time;
