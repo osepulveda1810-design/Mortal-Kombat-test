@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0e1a">
+    <title>Sub-Zero Adventure</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-touch-callout: none; }
+        body {
+            background-color: #0a0e1a; display: flex; justify-content: center; align-items: center;
+            height: 100dvh; width: 100vw; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; position: fixed; color: #fff;
+        }
+        #game-container {
+            display: flex; width: 100vw; height: 100dvh;
+            position: fixed; top: 0; left: 0; transform-origin: left top;
+        }
+        @media screen and (orientation: portrait) {
+            #game-container {
+                width: 100vh; height: 100vw;
+                position: absolute; top: 0; left: 100%;
+                transform-origin: left top; transform: rotate(90deg);
+            }
+        }
+        #canvas-wrapper {
+            position: relative; display: flex; justify-content: center; align-items: center;
+            width: 100%; height: 100%; background-color: #0a0e1a; overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; background-color: #0a0e1a; }
+
+        .menu-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(10, 14, 26, 0.95); z-index: 100; transition: opacity 0.5s;
+        }
+        .menu-overlay.hidden { opacity: 0; pointer-events: none; }
+        .menu-title {
+            font-size: clamp(32px, 8vw, 72px); font-weight: 900;
+            background: linear-gradient(180deg, #a0e6ff 0%, #4ecca3 50%, #0a5c5c 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(78, 204, 163, 0.4); margin-bottom: 20px;
+            letter-spacing: 4px; text-transform: uppercase;
+        }
+        .menu-subtitle { font-size: clamp(12px, 2.5vw, 18px); color: #4ecca3; margin-bottom: 30px; opacity: 0.8; }
+        
+        /* Botones del menú más pequeños */
+        .menu-btn {
+            padding: 10px 28px; margin: 6px; font-size: clamp(12px, 2.5vw, 16px);
+            background: rgba(78, 204, 163, 0.1); border: 2px solid rgba(78, 204, 163, 0.4);
+            color: #a0e6ff; cursor: pointer; transition: all 0.3s; border-radius: 4px;
+            text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+        }
+        .menu-btn:hover, .menu-btn:active {
+            background: rgba(78, 204, 163, 0.3); border-color: #4ecca3;
+            box-shadow: 0 0 20px rgba(78, 204, 163, 0.3); transform: scale(1.05);
+        }
+        .menu-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+        .story-box {
+            max-width: 80%; padding: 20px; background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(78, 204, 163, 0.3); border-radius: 8px;
+            font-size: clamp(13px, 2.5vw, 18px); line-height: 1.6; color: #c0d0e0;
+            margin-bottom: 20px; text-align: center;
+        }
+        .story-box .chapter { color: #4ecca3; font-weight: bold; margin-bottom: 10px; font-size: 1.2em; }
+        .story-box .boss-name { color: #ff6b6b; font-weight: bold; }
+        .level-select {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+            max-width: 90%; margin-bottom: 20px;
+        }
+        .level-btn {
+            aspect-ratio: 1; padding: 10px; font-size: clamp(10px, 2vw, 14px);
+            background: rgba(78, 204, 163, 0.05); border: 1px solid rgba(78, 204, 163, 0.2);
+            color: #a0e6ff; cursor: pointer; border-radius: 6px; display: flex;
+            flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+            transition: all 0.2s;
+        }
+        .level-btn:hover { border-color: #4ecca3; background: rgba(78, 204, 163, 0.15); }
+        .level-btn.locked { opacity: 0.3; cursor: not-allowed; }
+        .level-btn.cleared { border-color: #2ecc71; color: #2ecc71; }
+        .level-btn.current { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.2); }
+        .level-num { font-size: 1.5em; font-weight: bold; }
+        .level-boss { font-size: 0.75em; opacity: 0.7; }
+
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 20; pointer-events: none; background: rgba(0,0,0,0.3);
+        }
+        .hud-section { display: flex; align-items: center; gap: 10px; }
+        .hud-bar { width: 120px; height: 10px; background: rgba(0,0,0,0.5); border-radius: 5px; overflow: hidden; }
+        .hud-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s; }
+        .hud-text { font-size: 12px; font-weight: bold; color: #a0e6ff; }
+        .hud-score { font-size: 16px; font-weight: 900; color: #f1c40f; }
+
+        #controls {
+            position: absolute; bottom: max(15px, env(safe-area-inset-bottom, 15px));
+            left: 0; width: 100%; padding: 0 15px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            z-index: 10; pointer-events: none;
+        }
+        #controls .control-group, #controls .btn { pointer-events: auto; }
+        .control-group.dpad { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .dpad-row { display: flex; gap: 10px; }
+        .btn-small {
+            width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3);
+            background: rgba(20,30,50,0.6); color: #fff; font-size: 18px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: all 0.1s;
+            touch-action: none; cursor: pointer;
+        }
+        .btn-small:active, .btn-small.active { background: rgba(78,204,163,0.6); border-color: rgba(78,204,163,1); transform: scale(0.9); }
+        .btn {
+            width: 70px; height: 70px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.3);
+            background: rgba(20,30,50,0.6); backdrop-filter: blur(2px);
+            color: #fff; font-size: 24px; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8); transition: all 0.1s;
+            touch-action: none; cursor: pointer;
+        }
+        .btn:active, .btn.active { background: rgba(78,204,163,0.6); border-color: rgba(78,204,163,1); transform: scale(0.9); }
+        .attack-group { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; justify-content: flex-end; max-width: 280px; }
+        #btn-punch, #btn-kick {
+            width: 66px; height: 66px; border-radius: 50%; padding: 0;
+            background: radial-gradient(circle, rgba(160,230,255,0.05) 0%, rgba(160,230,255,0.15) 100%);
+            border: 2px solid rgba(160,230,255,0.4);
+            box-shadow: 0 0 20px rgba(160,230,255,0.2), inset 0 0 25px rgba(160,230,255,0.2), inset 0 0 5px rgba(255,255,255,0.4);
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+            user-select: none; -webkit-user-select: none;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+        }
+        #btn-punch:active, #btn-punch.active, #btn-kick:active, #btn-kick.active {
+            transform: scale(0.88);
+            background: radial-gradient(circle, rgba(160,230,255,0.15) 0%, rgba(160,230,255,0.3) 100%);
+            box-shadow: 0 0 30px rgba(160,230,255,0.5), inset 0 0 30px rgba(160,230,255,0.5);
+            border-color: rgba(160,230,255,0.8);
+        }
+        .punch-icon, .boot-icon { width: 60%; height: 60%; pointer-events: none;
+            filter: drop-shadow(0 0 6px rgba(160,230,255,0.8)) drop-shadow(0 0 2px #fff); transition: transform 0.1s ease; }
+        #btn-punch:active .punch-icon, #btn-punch.active .punch-icon { transform: scale(0.95) translateY(-5px);
+            filter: drop-shadow(0 0 10px rgba(160,230,255,1)) drop-shadow(0 0 4px #fff); }
+        #btn-kick:active .boot-icon, #btn-kick.active .boot-icon { transform: scale(0.95) rotate(-3deg);
+            filter: drop-shadow(0 0 10px rgba(160,230,255,1)) drop-shadow(0 0 4px #fff); }
+        
+        /* NUEVO ESTILO PARA BOTÓN DE HIELO */
+        #btn-ice {
+            width: 60px; height: 60px; border-radius: 50%; padding: 0;
+            background: radial-gradient(circle, rgba(0, 150, 255, 0.1) 0%, rgba(0, 100, 200, 0.2) 100%);
+            border: 2px solid rgba(0, 200, 255, 0.6);
+            box-shadow: 0 0 25px rgba(0, 150, 255, 0.2), inset 0 0 25px rgba(0, 150, 255, 0.1);
+            backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+            transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+            user-select: none; -webkit-user-select: none;
+            touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+            color: #a0e6ff; font-size: 26px; font-weight: bold;
+        }
+        #btn-ice:active, #btn-ice.active {
+            transform: scale(0.88);
+            background: radial-gradient(circle, rgba(0, 200, 255, 0.4) 0%, rgba(0, 150, 255, 0.6) 100%);
+            box-shadow: 0 0 40px rgba(0, 150, 255, 0.6), inset 0 0 30px rgba(0, 150, 255, 0.5);
+            border-color: #00ffff;
+        }
+
+        #btn-jump { width: 80px; height: 80px; background: rgba(200,30,30,0.4); border-color: rgba(255,50,50,0.6); font-weight: bold; font-size: 16px; }
+        #btn-jump:active, #btn-jump.active { background: rgba(255,50,50,0.8); }
+        
+        @media (max-width: 500px) {
+            .btn { width: 60px; height: 60px; font-size: 20px; }
+            #btn-punch, #btn-kick { width: 58px; height: 58px; }
+            #btn-ice { width: 58px; height: 58px; font-size: 22px; }
+            #btn-jump { width: 70px; height: 70px; }
+            .attack-group { max-width: 220px; gap: 6px; }
+        }
+        @media (max-width: 400px) {
+            .btn { width: 55px; height: 55px; font-size: 18px; }
+            #btn-punch, #btn-kick { width: 52px; height: 52px; }
+            #btn-ice { width: 50px; height: 50px; font-size: 20px; }
+            #btn-jump { width: 65px; height: 65px; }
+            .attack-group { max-width: 190px; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            
+            <!-- HUD -->
+            <div id="hud" style="display:none;">
+                <div class="hud-section">
+                    <span class="hud-text">HP</span>
+                    <div class="hud-bar"><div class="hud-bar-fill" id="player-hp" style="width:100%;background:#4ecca3;"></div></div>
+                </div>
+                <div class="hud-section"><span class="hud-score" id="score-display">0</span></div>
+                <div class="hud-section">
+                    <span class="hud-text">BOSS</span>
+                    <div class="hud-bar"><div class="hud-bar-fill" id="boss-hp" style="width:100%;background:#e74c3c;"></div></div>
+                </div>
+                <!-- Botón de Pausa -->
+                <button class="btn" id="btn-pause" style="width:44px;height:44px;font-size:18px;font-weight:bold;background:rgba(20,30,50,0.8);border-color:rgba(255,255,255,0.2);pointer-events:auto;position:absolute;right:10px;top:10px;z-index:25;padding:0;border-radius:8px;line-height:1;">⏸</button>
+            </div>
+
+            <!-- Pantalla de Pausa -->
+            <div class="menu-overlay hidden" id="pause-screen">
+                <div class="menu-title" style="font-size:clamp(28px,6vw,56px);">PAUSA</div>
+                <div class="story-box" style="max-width:400px;">
+                    <p style="margin:0;">El destino de Lin Kuei descansa en tus manos...</p>
+                </div>
+                <button class="menu-btn" id="btn-resume">Continuar</button>
+                <button class="menu-btn" id="btn-save">Guardar Progreso</button>
+                <button class="menu-btn" id="btn-quit">Salir al Menú</button>
+            </div>
+
+            <!-- Menú Principal -->
+            <div class="menu-overlay" id="main-menu">
+                <div class="menu-title">SUB-ZERO</div>
+                <div class="menu-subtitle">ADVENTURE</div>
+                <button class="menu-btn" id="btn-new-game">Nueva Partida</button>
+                <button class="menu-btn" id="btn-continue" disabled>Continuar</button>
+                <button class="menu-btn" id="btn-select-level">Seleccionar Nivel</button>
+                <button class="menu-btn" id="btn-how-to-play">Como Jugar</button>
+            </div>
+
+            <!-- Selección de Nivel -->
+            <div class="menu-overlay hidden" id="level-select-menu">
+                <div class="menu-title" style="font-size:clamp(24px,5vw,40px);margin-bottom:20px;">SELECCIONAR NIVEL</div>
+                <div class="level-select" id="level-grid"></div>
+                <button class="menu-btn" id="btn-back-main">Volver</button>
+            </div>
+
+            <!-- Pantalla de Historia -->
+            <div class="menu-overlay hidden" id="story-screen">
+                <div class="story-box" id="story-text"></div>
+                <button class="menu-btn" id="btn-start-level">INICIAR</button>
+            </div>
+
+            <!-- Resultados (Victoria/Derrota) -->
+            <div class="menu-overlay hidden" id="result-screen">
+                <div class="menu-title" id="result-title" style="font-size:clamp(28px,6vw,56px);"></div>
+                <div class="story-box" id="result-text"></div>
+                <div id="result-buttons" style="display:flex; flex-direction:column; align-items:center;">
+                    <button class="menu-btn" id="btn-retry">Reintentar</button>
+                    <button class="menu-btn" id="btn-next-level">Siguiente Nivel</button>
+                    <button class="menu-btn" id="btn-menu">Menu Principal</button>
+                </div>
+            </div>
+
+            <!-- Cómo Jugar -->
+            <div class="menu-overlay hidden" id="how-to-play">
+                <div class="menu-title" style="font-size:clamp(24px,5vw,40px);margin-bottom:20px;">COMO JUGAR</div>
+                <div class="story-box" style="text-align:left;max-width:600px;">
+                    <p><strong style="color:#4ecca3;">Movimiento:</strong> &#9664; &#9654; para moverte, &#9650; &#9660; para cambiar de carril</p>
+                    <p><strong style="color:#4ecca3;">Salto:</strong> Boton SALTO o Espacio</p>
+                    <p><strong style="color:#4ecca3;">Puño:</strong> 1 tap = golpe rapido | 2 taps rapidos = proyectil de hielo</p>
+                    <p><strong style="color:#4ecca3;">Patada:</strong> 1 tap = patada normal | 2 taps rapidos = patada fuerte</p>
+                    <p><strong style="color:#4ecca3;">Aereo:</strong> Salta y ataca para combos aereos</p>
+                    <p><strong style="color:#4ecca3;">❄️ Hielo:</strong> Congela a los enemigos y al jefe por unos segundos.</p>
+                    <p><strong style="color:#ffd700;">⏸ Pausa:</strong> Presiona el botón de pausa o la tecla <strong>P/Escape</strong> para guardar o salir.</p>
+                    <p style="margin-top:15px;color:#f1c40f;">Derrota a todos los enemigos y al jefe de cada nivel para avanzar.</p>
+                </div>
+                <button class="menu-btn" id="btn-back-how">Volver</button>
+            </div>
+
+            <!-- Controles Táctiles -->
+            <div id="controls" style="display:none;">
+                <div class="control-group dpad">
+                    <button class="btn-small" id="btn-forward">&#9650;</button>
+                    <div class="dpad-row">
+                        <button class="btn" id="btn-left">&#9664;</button>
+                        <button class="btn" id="btn-right">&#9654;</button>
+                    </div>
+                    <button class="btn-small" id="btn-backward">&#9660;</button>
+                </div>
+                <div class="control-group attack-group">
+                    <button class="btn" id="btn-punch" aria-label="Ataque de Puño">
+                        <svg class="punch-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <g fill="none" stroke="#a0e6ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M 32 75 L 68 75 L 65 92 L 35 92 Z" />
+                                <path d="M 33 83 L 67 83" stroke-width="2" />
+                                <path d="M 32 75 C 10 65 8 35 28 18 C 45 3 70 8 78 28 C 82 38 82 48 78 55" />
+                                <path d="M 60 40 C 85 45 92 65 75 75 L 68 75 C 60 75 55 65 60 55" />
+                                <path d="M 45 22 C 38 40 48 62 65 68" stroke-width="2.5" />
+                            </g>
+                        </svg>
+                    </button>
+                    <button class="btn" id="btn-kick" aria-label="Patada Alta">
+                        <svg class="boot-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <g fill="none" stroke="#a0e6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M 65 20 L 65 55 C 65 65 72 75 70 85 C 69 88 64 90 55 90 L 25 90 C 12 90 12 78 22 72 C 32 66 38 58 38 45 L 38 20 Z" />
+                                <path d="M 21 83 L 69 83" />
+                                <path d="M 22 72 C 28 72 32 77 32 83" />
+                                <path d="M 65 65 C 60 70 60 80 69 83" stroke-width="2"/>
+                                <path d="M 38 25 L 48 30 L 38 35 L 48 40 L 38 45 L 48 50 L 38 55 L 45 60" stroke-width="2.5"/>
+                                <path d="M 35 20 L 68 20" stroke-width="5" />
+                            </g>
+                        </svg>
+                    </button>
+                    <button class="btn" id="btn-ice" aria-label="Ataque de Hielo">❄️</button>
+                    <button class="btn" id="btn-jump">SALTO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// SUB-ZERO ADVENTURE - MOTOR COMPLETO
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const LEVELS = [
+    { id: 1, name: "Calles de la Ciudad", subtitle: "El Frio Amanece", boss: "Kano", bossTitle: "Lider del Dragon Negro",
+      story: "Tras la muerte de tu hermano Bi-Han, descubres que mercenarios del Dragon Negro secuestran civiles para experimentos del clan Lin Kuei. Debes detenerlos.",
+      bgColor: [15, 20, 35], groundColor: [40, 45, 60], enemyTypes: ['thug','thug_gun','ninja_renegade'],
+      enemyCount: 5, spawnRate: 4000, bossHealth: 150, bossDamage: 8, bossSpeed: 1.2 },
+    { id: 2, name: "Fabrica Abandonada", subtitle: "El Frio de la Maquina", boss: "Sektor", bossTitle: "Ciborg del Lin Kuei",
+      story: "Rastreas los secuestros hasta una fabrica donde el Lin Kuei transforma a sus miembros en ciborgs asesinos. Sektor, el primer ciborg, te espera.",
+      bgColor: [25, 20, 15], groundColor: [55, 50, 40], enemyTypes: ['cyborg_basic','technician','sektor_miniboss'],
+      enemyCount: 6, spawnRate: 3800, bossHealth: 200, bossDamage: 10, bossSpeed: 1.0 },
+    { id: 3, name: "Templo Shaolin", subtitle: "Sangre sobre los Sagrados", boss: "Baraka", bossTitle: "Guerrero Tarkatano",
+      story: "Los monjes shaolin son masacrados por un grupo que busca un mapa sagrado. Los Tarkatanos de Outworld han invadido el templo.",
+      bgColor: [30, 25, 20], groundColor: [80, 70, 50], enemyTypes: ['monk_renegade','tarkatan','priest_quan'],
+      enemyCount: 6, spawnRate: 3500, bossHealth: 250, bossDamage: 12, bossSpeed: 1.5 },
+    { id: 4, name: "El Pantano", subtitle: "Niebla Traicionera", boss: "Reptile", bossTitle: "Espia Saurio",
+      story: "Sigues el rastro del mapa robado hasta un pantano tenebroso. Un hechicero usa nigromancia para crear un ejercito de muertos.",
+      bgColor: [15, 25, 15], groundColor: [35, 55, 30], enemyTypes: ['zombie','reptile_mutant','shadow_ghost'],
+      enemyCount: 7, spawnRate: 3400, bossHealth: 220, bossDamage: 10, bossSpeed: 1.8 },
+    { id: 5, name: "Fortaleza del Dragon Negro", subtitle: "Corazon de la Traicion", boss: "Cyrax", bossTitle: "Ciborg Tragico",
+      story: "Descubres que Kano no actuaba solo. El Dragon Negro es solo una pieza del plan de un hechicero mucho mas poderoso.",
+      bgColor: [35, 15, 10], groundColor: [60, 30, 20], enemyTypes: ['soldier_elite','cyborg_upgrade','assassin_lk'],
+      enemyCount: 6, spawnRate: 3200, bossHealth: 280, bossDamage: 14, bossSpeed: 1.3 },
+    { id: 6, name: "Costa de Outworld", subtitle: "Puerta al Infierno", boss: "Goro", bossTitle: "Principe Shokan",
+      story: "Cruzas a Outworld para enfrentar al verdadero villano. El camino esta custodiado por el ejercito de Shao Kahn.",
+      bgColor: [45, 20, 35], groundColor: [70, 40, 55], enemyTypes: ['shokan','sindel_priest','shadow_knight'],
+      enemyCount: 5, spawnRate: 3000, bossHealth: 400, bossDamage: 18, bossSpeed: 0.8 },
+    { id: 7, name: "Palacio de Shang Tsung", subtitle: "La Isla Maldita", boss: "Shang Tsung", bossTitle: "Hechicero Manipulador",
+      story: "Llegas al corazon del complot. Shang Tsung te espera. Pero primero... debes enfrentar al asesino de tu hermano.",
+      bgColor: [20, 15, 30], groundColor: [50, 40, 60], enemyTypes: ['spectre','demon_quan','statue'],
+      enemyCount: 6, spawnRate: 2800, bossHealth: 350, bossDamage: 15, bossSpeed: 1.0, hasMidBoss: true, midBoss: "Scorpion", midBossHealth: 300 },
+    { id: 8, name: "El Netherrealm", subtitle: "El Origen del Frio", boss: "Noob Saibot", bossTitle: "Bi-Han Resucitado",
+      story: "Tu hermano Bi-Han no descanso en paz. Ha sido resucitado como una sombra del mal en el infierno mismo. Debes liberarlo.",
+      bgColor: [25, 5, 5], groundColor: [50, 15, 10], enemyTypes: ['demon_lord','shadow_clone','hell_beast'],
+      enemyCount: 7, spawnRate: 2500, bossHealth: 500, bossDamage: 20, bossSpeed: 1.4 }
+];
+
+const ENEMY_CONFIGS = {
+    thug: { name: "Maton", health: 30, damage: 5, speed: 0.8, color: '#8B4513', height: 80, width: 50, attackRange: 60, attackCooldown: 2000 },
+    thug_gun: { name: "Maton Armado", health: 25, damage: 8, speed: 0.5, color: '#556B2F', height: 80, width: 50, attackRange: 150, attackCooldown: 3000, ranged: true },
+    ninja_renegade: { name: "Ninja Renegado", health: 40, damage: 6, speed: 1.2, color: '#2F4F4F', height: 85, width: 48, attackRange: 55, attackCooldown: 1500 },
+    cyborg_basic: { name: "Ciborg LK", health: 60, damage: 7, speed: 0.6, color: '#708090', height: 90, width: 55, attackRange: 70, attackCooldown: 2500 },
+    technician: { name: "Tecnico", health: 20, damage: 4, speed: 0.7, color: '#4682B4', height: 75, width: 45, attackRange: 100, attackCooldown: 2000, ranged: true, projectile: 'grenade' },
+    sektor_miniboss: { name: "Sektor (Mini)", health: 100, damage: 10, speed: 0.9, color: '#DC143C', height: 95, width: 58, attackRange: 80, attackCooldown: 2000 },
+    monk_renegade: { name: "Monje Corrupto", health: 45, damage: 6, speed: 0.9, color: '#8B6914', height: 82, width: 50, attackRange: 60, attackCooldown: 1800 },
+    tarkatan: { name: "Tarkatano", health: 55, damage: 10, speed: 1.3, color: '#8B0000', height: 88, width: 52, attackRange: 65, attackCooldown: 1600 },
+    priest_quan: { name: "Sacerdote Oscuro", health: 35, damage: 8, speed: 0.6, color: '#4B0082', height: 80, width: 48, attackRange: 120, attackCooldown: 2500, ranged: true, projectile: 'dark_orb' },
+    zombie: { name: "Zombi", health: 70, damage: 8, speed: 0.4, color: '#556B2F', height: 85, width: 52, attackRange: 50, attackCooldown: 2200 },
+    reptile_mutant: { name: "Reptil Mutante", health: 50, damage: 7, speed: 1.1, color: '#228B22', height: 82, width: 50, attackRange: 70, attackCooldown: 1800, ranged: true, projectile: 'acid' },
+    shadow_ghost: { name: "Sombra Espectral", health: 40, damage: 9, speed: 1.0, color: '#483D8B', height: 90, width: 45, attackRange: 55, attackCooldown: 1500, ethereal: true },
+    soldier_elite: { name: "Soldado Elite", health: 65, damage: 9, speed: 0.8, color: '#2F4F4F', height: 88, width: 54, attackRange: 80, attackCooldown: 2000, ranged: true },
+    cyborg_upgrade: { name: "Ciborg MK-II", health: 80, damage: 10, speed: 0.7, color: '#696969', height: 92, width: 56, attackRange: 75, attackCooldown: 2200 },
+    assassin_lk: { name: "Asesino LK", health: 50, damage: 12, speed: 1.4, color: '#191970', height: 85, width: 50, attackRange: 55, attackCooldown: 1400 },
+    shokan: { name: "Guerrero Shokan", health: 100, damage: 14, speed: 0.7, color: '#8B4513', height: 110, width: 65, attackRange: 80, attackCooldown: 2500 },
+    sindel_priest: { name: "Sacerdotisa", health: 45, damage: 10, speed: 0.9, color: '#9370DB', height: 85, width: 50, attackRange: 130, attackCooldown: 2000, ranged: true, projectile: 'sonic' },
+    shadow_knight: { name: "Caballero Sombra", health: 85, damage: 12, speed: 0.8, color: '#2C2C2C', height: 95, width: 58, attackRange: 70, attackCooldown: 1800 },
+    spectre: { name: "Espectro", health: 60, damage: 11, speed: 1.0, color: '#7B68EE', height: 88, width: 48, attackRange: 60, attackCooldown: 1600, ethereal: true },
+    demon_quan: { name: "Demonio", health: 80, damage: 13, speed: 0.8, color: '#DC143C', height: 95, width: 55, attackRange: 75, attackCooldown: 2000, ranged: true, projectile: 'fireball' },
+    statue: { name: "Estatua Animada", health: 120, damage: 15, speed: 0.5, color: '#808080', height: 105, width: 60, attackRange: 85, attackCooldown: 3000 },
+    demon_lord: { name: "Senor Demonio", health: 110, damage: 16, speed: 0.7, color: '#8B0000', height: 105, width: 62, attackRange: 80, attackCooldown: 2200, ranged: true, projectile: 'hellfire' },
+    shadow_clone: { name: "Clon de Sombra", health: 50, damage: 12, speed: 1.3, color: '#000000', height: 88, width: 50, attackRange: 55, attackCooldown: 1400, ethereal: true },
+    hell_beast: { name: "Bestia del Infierno", health: 130, damage: 18, speed: 0.9, color: '#FF4500', height: 100, width: 70, attackRange: 75, attackCooldown: 2500 }
+};
+
+const BOSS_CONFIGS = {
+    "Kano": { health: 150, damage: 8, speed: 1.2, color: '#FFD700', height: 110, width: 65, attackRange: 80, attackCooldown: 2000, pattern: 'aggressive', special: 'laser_eye', specialCooldown: 5000, specialDamage: 20 },
+    "Sektor": { health: 200, damage: 10, speed: 1.0, color: '#DC143C', height: 115, width: 68, attackRange: 90, attackCooldown: 1800, pattern: 'ranged', special: 'missile', specialCooldown: 4000, specialDamage: 25, ranged: true },
+    "Baraka": { health: 250, damage: 12, speed: 1.5, color: '#8B0000', height: 108, width: 62, attackRange: 70, attackCooldown: 1500, pattern: 'berserk', special: 'blade_spin', specialCooldown: 6000, specialDamage: 30 },
+    "Reptile": { health: 220, damage: 10, speed: 1.8, color: '#228B22', height: 105, width: 60, attackRange: 85, attackCooldown: 1600, pattern: 'stealth', special: 'invisibility', specialCooldown: 7000, specialDamage: 15, ranged: true },
+    "Cyrax": { health: 280, damage: 14, speed: 1.3, color: '#FFD700', height: 112, width: 66, attackRange: 85, attackCooldown: 2000, pattern: 'technical', special: 'bomb_net', specialCooldown: 4500, specialDamage: 28, ranged: true },
+    "Goro": { health: 400, damage: 18, speed: 0.8, color: '#8B4513', height: 140, width: 90, attackRange: 100, attackCooldown: 2500, pattern: 'tank', special: 'ground_pound', specialCooldown: 6000, specialDamage: 35 },
+    "Scorpion": { health: 300, damage: 15, speed: 1.2, color: '#FF4500', height: 110, width: 65, attackRange: 120, attackCooldown: 1800, pattern: 'aggressive', special: 'spear', specialCooldown: 4000, specialDamage: 25, ranged: true },
+    "Shang Tsung": { health: 350, damage: 15, speed: 1.0, color: '#4B0082', height: 115, width: 68, attackRange: 100, attackCooldown: 2000, pattern: 'mage', special: 'soul_steal', specialCooldown: 5000, specialDamage: 30, ranged: true },
+    "Noob Saibot": { health: 500, damage: 20, speed: 1.4, color: '#000000', height: 115, width: 68, attackRange: 90, attackCooldown: 1500, pattern: 'shadow', special: 'shadow_clone', specialCooldown: 6000, specialDamage: 35, ethereal: true }
+};
+
+const GameState = { MENU: 'menu', STORY: 'story', PLAYING: 'playing', PAUSED: 'paused', VICTORY: 'victory', DEFEAT: 'defeat', LEVEL_SELECT: 'level_select', HOW_TO_PLAY: 'how_to_play' };
+
+let currentState = GameState.MENU;
+let currentLevel = 0;
+let score = 0;
+let unlockedLevels = 1;
+let clearedLevels = [];
+
+try {
+    const saved = localStorage.getItem('subzero_adventure_save');
+    if (saved) { const d = JSON.parse(saved); unlockedLevels = d.unlockedLevels || 1; clearedLevels = d.clearedLevels || []; score = d.score || 0; }
+} catch(e) {}
+
+function saveProgress() {
+    try { localStorage.setItem('subzero_adventure_save', JSON.stringify({ unlockedLevels, clearedLevels, score })); }
+    catch(e) {}
+}
+
+const playerSprites = {
+    idle: new Image(), walk: new Image(), jump: new Image(), kick: new Image(),
+    kick2: new Image(), punch: new Image(), punch2: new Image(), punchAir: new Image(), kickAir: new Image()
+};
+playerSprites.idle.src = 'idle_subzero.png'; playerSprites.walk.src = 'walk_subzero.png';
+playerSprites.jump.src = 'jump_subzero.png'; playerSprites.kick.src = 'kick_subzero.png';
+playerSprites.kick2.src = 'kick_subzero2.png'; playerSprites.punch.src = 'punch_subzero.png';
+playerSprites.punch2.src = 'punch_subzero2.png'; playerSprites.punchAir.src = 'punch_air.png';
+playerSprites.kickAir.src = 'kick_air.png';
+
+// NUEVOS SPRITES DE HIELO
+const iceSprites = {
+    charge: new Image(), throw: new Image(), proj: new Image(), hit: new Image()
+};
+iceSprites.charge.src = 'subzero_ice_charge.png';
+iceSprites.throw.src = 'subzero_ice1.png';
+iceSprites.proj.src = 'ice.png';
+iceSprites.hit.src = 'subzero_ice2.png';
+
+let currentSprite = playerSprites.idle, currentFrame = 0;
+const totalFrames = 4;
+let frameSpeed = 150, lastTime = 0, lastJumpFrameTime = 0;
+let jumpTimer = 0;
+let landingTimer = 0;
+
+let player = {
+    x: 50, y: 50, velocityX: 0, velocityY: 0, speed: 2.2, gravity: 0.22, jumpStrength: -7.5,
+    facingRight: true, scale: 1, health: 100, maxHealth: 100, isJumping: false, isLanding: false,
+    landingTimer: 0, isAttacking: false, attackKind: null, attackTimer: 0, lastAttackFrameTime: 0,
+    attackRequested: null, damageDealt: false, punchTapCount: 0, punchLastTapTime: 0, punchDoubleTapWindow: 350,
+    kickTapCount: 0, kickLastTapTime: 0, kickDoubleTapWindow: 350, invulnerable: 0, flashTimer: 0,
+    comboQueued: null
+};
+
+let baseDrawWidth = 0, baseDrawHeight = 0, laneTop = 0, laneBottom = 0, playerLaneY = 0;
+const depthSpeed = 1.6; let positionInitialized = false;
+
+const attackFrameTimes = { punch: [100,100,120,160], punch2: [120,140,100,350], kick: [160,180,140,240], kick2: [180,200,160,300], punchAir: [260], kickAir: [260] };
+const damageValues = { punch: 10, punch2: 25, kick: 15, kick2: 30, punchAir: 10, kickAir: 15 };
+const airHitDelay = { punchAir: 100, kickAir: 110 };
+
+let enemies = [], boss = null, midBoss = null, projectiles = [], particles = [], floatingTexts = [];
+let spawnTimer = 0, enemiesDefeated = 0, bossSpawned = false, levelComplete = false;
+
+const keys = { right: false, left: false, up: false, forward: false, backward: false };
+
+const frameOffsets = { idle: [0,0,0,0], walk: [0,0,0,0], jump: [0,0,0,0], kick: [0,0,0,0], kick2: [0,0,0,0], punch: [0,3,16,22], punch2: [0,0,0,-20], punchAir: [0,0,0,0], kickAir: [0,0,0,0] };
+const cropAdjusts = { punch: {x:[0,0,0,0], w:[0,-5,-5,-5]}, punch2: {x:[0,0,6,0], w:[0,0,-28,-35]}, punchAir: {x:[0,0,0,0], w:[14,0,0,0]}, kickAir: {x:[-4,0,0,0], w:[28,0,0,0]} };
+const customScales = { punch: 1.0, punch2: 1.0, kick: 1.0, kick2: 1.0, punchAir: 1.0, kickAir: 1.0 };
+const verticalOffsets = { punch: 0, punch2: 0, kick: 0, kick2: 0, punchAir: 0, kickAir: 0 };
+// Ajustes finos para que subzero_ice_charge / subzero_ice1 / subzero_ice2 calcen con el sprite idle.
+// Mismo esquema que customScales/verticalOffsets de arriba: si al probar en el navegador ves que
+// el personaje "salta" al entrar o salir del ataque de hielo, ajusta estos 3 valores por fase.
+const iceCustomScales = { ice_charge: 1.0, ice_throw: 1.0, ice_follow: 1.0 };
+const iceOffsets = { ice_charge: 0, ice_throw: 0, ice_follow: 0 };
+const iceVerticalOffsets = { ice_charge: 0, ice_throw: 0, ice_follow: 0 };
+const airSourceFrames = { punchAir: 0, kickAir: 1 };
+
+// Limite maximo de enemigos activos para evitar sobrecarga
+const MAX_ACTIVE_ENEMIES = 4;
+
+function setupCanvas() {
+    const wrapper = document.getElementById('canvas-wrapper');
+    const w = wrapper.clientWidth, h = wrapper.clientHeight;
+    canvas.width = w; canvas.height = h;
+    const frameHeight = playerSprites.idle.height || 369;
+    player.scale = (h * 0.65) / frameHeight;
+    baseDrawWidth = ((playerSprites.idle.width || 677) / totalFrames) * player.scale;
+    baseDrawHeight = (playerSprites.idle.height || 369) * player.scale;
+    laneBottom = canvas.height - (frameHeight * player.scale) - 20;
+    const laneHeight = Math.min(canvas.height * 0.35, 160);
+    laneTop = Math.max(20, laneBottom - laneHeight);
+    if (playerLaneY > laneBottom || playerLaneY === 0) playerLaneY = laneBottom;
+    if (playerLaneY < laneTop) playerLaneY = laneTop;
+    if (!positionInitialized) { player.y = playerLaneY; positionInitialized = true; }
+    if (player.y > playerLaneY) player.y = playerLaneY;
+}
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function dist(x1, y1, x2, y2) { return Math.sqrt((x2-x1)**2 + (y2-y1)**2); }
+
+const MAX_PARTICLES = 50;
+
+function spawnParticle(x, y, type, color, count) {
+    const allowed = Math.max(0, Math.min(count, MAX_PARTICLES - particles.length));
+    for (let i = 0; i < allowed; i++) {
+        particles.push({ x, y, vx: rand(-3,3), vy: rand(-5,-1), life: rand(300,800), maxLife: 800, size: rand(2,6), color, type, gravity: 0.15 });
+    }
+}
+function spawnIceEffect(x, y) {
+    const allowed = Math.max(0, Math.min(8, MAX_PARTICLES - particles.length));
+    for (let i = 0; i < allowed; i++) {
+        particles.push({ x, y: y + rand(-20,20), vx: rand(-2,2), vy: rand(-4,-1), life: 600, maxLife: 600, size: rand(3,8), color: '#a0e6ff', type: 'ice', gravity: 0.05, rotation: rand(0, Math.PI*2), rotSpeed: rand(-0.1,0.1) });
+    }
+}
+function spawnBloodEffect(x, y, color) {
+    const allowed = Math.max(0, Math.min(6, MAX_PARTICLES - particles.length));
+    for (let i = 0; i < allowed; i++) {
+        particles.push({ x, y, vx: rand(-4,4), vy: rand(-3,1), life: 500, maxLife: 500, size: rand(2,5), color: color || '#c0392b', type: 'blood', gravity: 0.2 });
+    }
+}
+function spawnFloatingText(x, y, text, color) {
+    floatingTexts.push({ x, y, text, color, timer: 0, life: 800, vy: -1.5 });
+}
+function spawnProjectile(x, y, tx, ty, damage, speed, color, owner, type) {
+    const dx = tx - x, dy = ty - y, mag = Math.sqrt(dx*dx + dy*dy);
+    projectiles.push({ x, y, vx: (dx/mag)*speed, vy: (dy/mag)*speed, damage, color, owner, type, life: 3000, size: 6 });
+}
+
+// Variable para el proyectil de hielo "attached" durante la animación de lanzamiento
+let attachedIceProjectile = null;
+
+function spawnAttachedIceProjectile(x, y) {
+    attachedIceProjectile = {
+        x: x, y: y,
+        offsetX: x - player.x,
+        offsetY: y - playerLaneY,
+        life: 5000,
+        sprite: iceSprites.proj,
+        attached: true,
+        released: false,
+        scale: 0.6
+    };
+}
+
+// Busca el enemigo objetivo SOLO en la dirección hacia la que mira el personaje.
+// Si no hay ninguno en esa dirección, devuelve null (el proyectil ira recto hacia donde mira).
+function findIceTargetInFacingDirection() {
+    if (!attachedIceProjectile) return null;
+    const facingDir = player.facingRight ? 1 : -1;
+    let target = null;
+    let minDist = Infinity;
+    for (let e of enemies) {
+        if (e.dead) continue;
+        const ex = e.x + e.width/2;
+        if ((facingDir === 1 && ex > attachedIceProjectile.x) || (facingDir === -1 && ex < attachedIceProjectile.x)) {
+            const d = dist(attachedIceProjectile.x, attachedIceProjectile.y, ex, e.laneY + e.height/2);
+            if (d < minDist) { minDist = d; target = e; }
+        }
+    }
+    if (boss && !boss.dead) {
+        const bx = boss.x + boss.width/2;
+        if ((facingDir === 1 && bx > attachedIceProjectile.x) || (facingDir === -1 && bx < attachedIceProjectile.x)) {
+            const d = dist(attachedIceProjectile.x, attachedIceProjectile.y, bx, boss.laneY + boss.height/2);
+            if (d < minDist) { minDist = d; target = boss; }
+        }
+    }
+    if (midBoss && !midBoss.dead) {
+        const mx = midBoss.x + midBoss.width/2;
+        if ((facingDir === 1 && mx > attachedIceProjectile.x) || (facingDir === -1 && mx < attachedIceProjectile.x)) {
+            const d = dist(attachedIceProjectile.x, attachedIceProjectile.y, mx, midBoss.laneY + midBoss.height/2);
+            if (d < minDist) { minDist = d; target = midBoss; }
+        }
+    }
+    return target;
+}
+
+// Se llama al pasar de subzero_ice1 (mano cerca) a subzero_ice2 (follow-through).
+// Fija de una vez la direccion que seguira el proyectil durante toda la fase 2 y el vuelo libre.
+// Si el personaje mira a la izquierda pero no hay enemigo a la izquierda, la direccion
+// sigue siendo estrictamente hacia la izquierda (nunca se "engancha" a un enemigo detras).
+function lockIceProjectileTrajectory() {
+    if (!attachedIceProjectile) return;
+    const facingDir = player.facingRight ? 1 : -1;
+    const target = findIceTargetInFacingDirection();
+
+    let dirX = facingDir, dirY = 0;
+    if (target) {
+        const tx = target.x + target.width/2;
+        const ty = target.laneY + target.height/2;
+        const ddx = tx - attachedIceProjectile.x;
+        const ddy = ty - attachedIceProjectile.y;
+        const mag = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
+        dirX = (Math.abs(ddx) / mag) * facingDir;
+        dirY = ddy / mag;
+        // Si el enemigo está muy desplazado de carril (arriba/abajo), la trayectoria se vuelve
+        // casi vertical y el alejamiento horizontal deja de notarse. Garantizamos un mínimo de
+        // componente horizontal hacia donde mira el personaje para que SIEMPRE se vea que el
+        // hielo se aleja en subzero_ice2, sea cual sea el carril del enemigo.
+        const minHoriz = 0.6;
+        if (Math.abs(dirX) < minHoriz) {
+            dirX = facingDir * minHoriz;
+            const remain = Math.sqrt(Math.max(0, 1 - minHoriz * minHoriz));
+            dirY = dirY < 0 ? -remain : remain;
+        }
+    }
+
+    attachedIceProjectile.dirX = dirX;
+    attachedIceProjectile.dirY = dirY;
+    attachedIceProjectile.baseX = attachedIceProjectile.x;
+    attachedIceProjectile.baseY = attachedIceProjectile.y;
+}
+
+function releaseAttachedProjectile() {
+    if (attachedIceProjectile && attachedIceProjectile.attached && !attachedIceProjectile.released) {
+        attachedIceProjectile.released = true;
+        attachedIceProjectile.attached = false;
+        const speed = 5.5;
+        const facingDir = player.facingRight ? 1 : -1;
+        // Usa la trayectoria ya bloqueada en lockIceProjectileTrajectory().
+        // Si por algun motivo no se bloqueo antes, cae en la direccion en la que mira el personaje.
+        const dirX = (attachedIceProjectile.dirX !== undefined) ? attachedIceProjectile.dirX : facingDir;
+        const dirY = (attachedIceProjectile.dirY !== undefined) ? attachedIceProjectile.dirY : 0;
+
+        projectiles.push({
+            x: attachedIceProjectile.x,
+            y: attachedIceProjectile.y,
+            vx: dirX * speed, vy: dirY * speed,
+            damage: 0, color: '#a0e6ff', owner: 'player',
+            type: 'ice_projectile', life: 3000, size: 20,
+            sprite: iceSprites.proj
+        });
+
+        attachedIceProjectile = null;
+    }
+}
+
+function updateAttachedProjectile(dt) {
+    if (!attachedIceProjectile) return;
+    attachedIceProjectile.life -= dt;
+    if (attachedIceProjectile.life <= 0) {
+        attachedIceProjectile = null;
+        return;
+    }
+    if (attachedIceProjectile.attached && !attachedIceProjectile.released) {
+        if (player.attackKind === 'ice_throw') {
+            // Fase 1 (subzero_ice1.png): el proyectil sigue pegado a la mano, cerca del personaje
+            const handOffset = player.facingRight ? baseDrawWidth * 0.85 : baseDrawWidth * 0.15;
+            attachedIceProjectile.x = player.x + handOffset;
+            attachedIceProjectile.y = playerLaneY + baseDrawHeight * 0.42;
+        } else if (player.attackKind === 'ice_follow' && attachedIceProjectile.dirX !== undefined) {
+            // Fase 2 (subzero_ice2.png): se aleja del personaje siguiendo la trayectoria
+            // ya fijada en lockIceProjectileTrajectory (hacia el enemigo, o hacia donde mira si no hay ninguno)
+            const progress = Math.min(1, player.attackTimer / 150);
+            const pushOut = progress * 55;
+            attachedIceProjectile.x = attachedIceProjectile.baseX + attachedIceProjectile.dirX * pushOut;
+            attachedIceProjectile.y = attachedIceProjectile.baseY + attachedIceProjectile.dirY * pushOut;
+            attachedIceProjectile.scale = 0.6 + progress * 0.5;
+        }
+    }
+}
+
+function drawAttachedProjectile(ctx, time) {
+    if (!attachedIceProjectile) return;
+    const p = attachedIceProjectile;
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    const pulse = 0.9 + Math.sin(time/80)*0.1;
+    if (p.sprite && p.sprite.complete) {
+        ctx.translate(p.x, p.y);
+        if (!player.facingRight) ctx.scale(-1, 1);
+        const w = p.sprite.width * p.scale * pulse;
+        const h = p.sprite.height * p.scale * pulse;
+        ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 0.3 + Math.sin(time/60)*0.2;
+        ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
+        ctx.globalCompositeOperation = 'source-over';
+    }
+    ctx.restore();
+}
+
+function createEnemy(type, x, laneY) {
+    const cfg = ENEMY_CONFIGS[type]; if (!cfg) return null;
+    return { type, x, y: 0, laneY, width: cfg.width, height: cfg.height, health: cfg.health, maxHealth: cfg.health,
+        damage: cfg.damage, speed: cfg.speed, color: cfg.color, lightColor: lightenColor(cfg.color, 20), attackRange: cfg.attackRange, attackCooldown: cfg.attackCooldown,
+        lastAttack: 0, flashTimer: 0, dead: false, frozen: 0, facingRight: false, state: 'idle', stateTimer: 0,
+        ranged: cfg.ranged || false, projectile: cfg.projectile || null, ethereal: cfg.ethereal || false, animFrame: 0, animTimer: 0 };
+}
+
+function createBoss(bossName, x, laneY) {
+    const cfg = BOSS_CONFIGS[bossName]; if (!cfg) return null;
+    return { name: bossName, x, y: 0, laneY, width: cfg.width, height: cfg.height, health: cfg.health, maxHealth: cfg.health,
+        damage: cfg.damage, speed: cfg.speed, color: cfg.color, lightColor: lightenColor(cfg.color, 30), attackRange: cfg.attackRange, attackCooldown: cfg.attackCooldown,
+        lastAttack: 0, flashTimer: 0, dead: false, frozen: 0, facingRight: false, state: 'idle', stateTimer: 0,
+        special: cfg.special, specialCooldown: cfg.specialCooldown, lastSpecial: 0, specialDamage: cfg.specialDamage,
+        ranged: cfg.ranged || false, pattern: cfg.pattern, ethereal: cfg.ethereal || false, phase: 1, animFrame: 0, animTimer: 0, introTimer: 2000 };
+}
+
+function startLevel(levelIndex) {
+    currentLevel = levelIndex;
+    player.x = 50; player.y = playerLaneY; player.velocityX = 0; player.velocityY = 0;
+    player.health = player.maxHealth; player.isJumping = false; player.isAttacking = false;
+    player.invulnerable = 0; player.flashTimer = 0;
+    enemies = []; boss = null; midBoss = null; projectiles = []; particles = []; floatingTexts = [];
+    spawnTimer = 0; enemiesDefeated = 0; bossSpawned = false; levelComplete = false;
+    document.getElementById('hud').style.display = 'flex';
+    document.getElementById('controls').style.display = 'flex';
+    currentState = GameState.PLAYING;
+    setupCanvas();
+}
+
+function spawnEnemy() {
+    const lvl = LEVELS[currentLevel]; 
+    if (!lvl || enemiesDefeated >= lvl.enemyCount) return;
+    if (enemies.length >= MAX_ACTIVE_ENEMIES) return;
+    const types = lvl.enemyTypes; 
+    const type = types[randInt(0, types.length - 1)];
+    const laneY = rand(laneTop + 20, laneBottom - 20); 
+    const x = canvas.width + rand(50, 200);
+    const enemy = createEnemy(type, x, laneY); 
+    if (enemy) enemies.push(enemy);
+}
+
+function spawnBoss() {
+    const lvl = LEVELS[currentLevel]; if (!lvl) return;
+    const laneY = (laneTop + laneBottom) / 2;
+    boss = createBoss(lvl.boss, canvas.width - 150, laneY);
+    bossSpawned = true;
+    spawnFloatingText(canvas.width/2, canvas.height/3, '!' + lvl.boss + ' APARECE!', '#ffd700');
+}
+
+// Lógica para crear el proyectil de hielo y apuntar al enemigo
+function spawnProjectileIce(x, y) {
+    let target = null;
+    let minDist = Infinity;
+    
+    for (let e of enemies) { if (!e.dead) { const d = dist(x, y, e.x + e.width/2, e.laneY + e.height/2); if (d < minDist) { minDist = d; target = e; } } }
+    if (boss && !boss.dead) { const d = dist(x, y, boss.x + boss.width/2, boss.laneY + boss.height/2); if (d < minDist) { minDist = d; target = boss; } }
+    if (midBoss && !midBoss.dead) { const d = dist(x, y, midBoss.x + midBoss.width/2, midBoss.laneY + midBoss.height/2); if (d < minDist) { minDist = d; target = midBoss; } }
+
+    const speed = 5.5;
+    let vx = player.facingRight ? speed : -speed;
+    let vy = 0;
+    
+    if (target) {
+        const dx = target.x + target.width/2 - x;
+        const dy = target.laneY + target.height/2 - y;
+        const mag = Math.sqrt(dx*dx + dy*dy);
+        vx = (dx/mag) * speed;
+        vy = (dy/mag) * speed;
+    }
+
+    projectiles.push({
+        x, y, vx, vy,
+        damage: 0, color: '#a0e6ff', owner: 'player',
+        type: 'ice_projectile', life: 3000, size: 20,
+        sprite: iceSprites.proj
+    });
+}
+
+function requestAttack(kind) {
+    if (levelComplete || currentState === GameState.PAUSED) return;
+    
+    if (kind === 'ice_charge') {
+        if (!player.isAttacking && !player.isJumping) {
+            player.attackRequested = 'ice_charge';
+            player.punchTapCount = 0; 
+            player.kickTapCount = 0;
+        }
+        return;
+    }
+    
+    const now = performance.now();
+    if (player.isJumping && !player.isAttacking) {
+        if (kind === 'punch') { player.attackRequested = 'punchAir'; player.punchTapCount = 0; return; }
+        if (kind === 'kick') { player.attackRequested = 'kickAir'; player.kickTapCount = 0; return; }
+    }
+    if (kind === 'punch') {
+        if (now - player.punchLastTapTime < player.punchDoubleTapWindow) player.punchTapCount++;
+        else player.punchTapCount = 1;
+        player.punchLastTapTime = now;
+        if (player.punchTapCount >= 2) {
+            player.punchTapCount = 0;
+            if (!player.isAttacking) player.attackRequested = 'punch2';
+            else player.comboQueued = 'punch2';
+        } else if (!player.isAttacking) { player.attackRequested = 'punch'; }
+    } else if (kind === 'kick') {
+        if (now - player.kickLastTapTime < player.kickDoubleTapWindow) player.kickTapCount++;
+        else player.kickTapCount = 1;
+        player.kickLastTapTime = now;
+        if (player.kickTapCount >= 2) {
+            player.kickTapCount = 0;
+            if (!player.isAttacking) player.attackRequested = 'kick2';
+            else player.comboQueued = 'kick2';
+        } else if (!player.isAttacking) { player.attackRequested = 'kick'; }
+    }
+}
+
+function checkHit() {
+    if (player.damageDealt) return;
+    const atk = player.attackKind;
+    if (atk === 'punchAir' || atk === 'kickAir') { if (player.attackTimer < (airHitDelay[atk] || 100)) return; }
+    else if (currentFrame !== 2) return;
+
+    const pWidth = baseDrawWidth * 0.8, pCenterX = player.x + pWidth/2, pCenterY = playerLaneY;
+
+    for (let e of enemies) {
+        if (e.dead) continue;
+        const eCenterX = e.x + e.width/2, eCenterY = e.laneY;
+        const distX = Math.abs(pCenterX - eCenterX), distLane = Math.abs(playerLaneY - e.laneY);
+        if (distX < 90 && distLane < 40) {
+            const dmg = damageValues[atk] || 10; e.health -= dmg; e.flashTimer = 200; player.damageDealt = true;
+            spawnFloatingText(eCenterX, e.y - 20, '-' + dmg, atk === 'punch2' ? '#0ff' : '#ff4444');
+            spawnBloodEffect(eCenterX, e.y + e.height/2);
+            if (atk === 'punch2') { e.frozen = 2000; spawnIceEffect(eCenterX, e.y); }
+            if (e.health <= 0) {
+                e.dead = true; spawnFloatingText(eCenterX, e.y - 40, 'K.O.!', '#ffd700');
+                score += 100; enemiesDefeated++; spawnParticle(eCenterX, e.y + e.height/2, 'explosion', e.color, 8);
+            }
+            return;
+        }
+    }
+
+    if (boss && !boss.dead && boss.introTimer <= 0) {
+        const bCenterX = boss.x + boss.width/2, bCenterY = boss.laneY;
+        const distX = Math.abs(pCenterX - bCenterX), distLane = Math.abs(playerLaneY - boss.laneY);
+        if (distX < 100 && distLane < 50) {
+            const dmg = damageValues[atk] || 10; boss.health -= dmg; boss.flashTimer = 200; player.damageDealt = true;
+            spawnFloatingText(bCenterX, boss.y - 30, '-' + dmg, atk === 'punch2' ? '#0ff' : '#ff4444');
+            spawnBloodEffect(bCenterX, boss.y + boss.height/2, boss.color);
+            if (atk === 'punch2') { boss.frozen = 1500; spawnIceEffect(bCenterX, boss.y); }
+            const hpPct = boss.health / boss.maxHealth;
+            if (hpPct < 0.5 && boss.phase === 1) { boss.phase = 2; boss.speed *= 1.3; spawnFloatingText(bCenterX, boss.y - 60, 'FURIA!', '#ff0000'); }
+            if (boss.health <= 0) {
+                boss.dead = true; spawnFloatingText(bCenterX, boss.y - 50, 'VICTORIA!', '#ffd700');
+                score += 1000; spawnParticle(bCenterX, boss.y + boss.height/2, 'explosion', boss.color, 15);
+                setTimeout(() => showVictory(), 2000);
+            }
+        }
+    }
+
+    if (midBoss && !midBoss.dead) {
+        const mCenterX = midBoss.x + midBoss.width/2, mCenterY = midBoss.laneY;
+        const distX = Math.abs(pCenterX - mCenterX), distLane = Math.abs(playerLaneY - midBoss.laneY);
+        if (distX < 100 && distLane < 50) {
+            const dmg = damageValues[atk] || 10; midBoss.health -= dmg; midBoss.flashTimer = 200; player.damageDealt = true;
+            spawnFloatingText(mCenterX, midBoss.y - 30, '-' + dmg, '#ff4500');
+            spawnBloodEffect(mCenterX, midBoss.y + midBoss.height/2, '#ff4500');
+            if (midBoss.health <= 0) {
+                midBoss.dead = true; spawnFloatingText(mCenterX, midBoss.y - 50, 'SCORPION CAIDO!', '#ffd700');
+                score += 500; spawnParticle(mCenterX, midBoss.y + midBoss.height/2, 'explosion', '#ff4500', 12);
+                setTimeout(() => {
+                    const lvl = LEVELS[6];
+                    boss = createBoss(lvl.boss, canvas.width - 150, (laneTop + laneBottom)/2);
+                    bossSpawned = true; spawnFloatingText(canvas.width/2, canvas.height/3, '!' + lvl.boss + ' APARECE!', '#4b0082');
+                }, 2000);
+            }
+        }
+    }
+}
+
+function damagePlayer(amount) {
+    if (player.invulnerable > 0) return;
+    player.health -= amount; player.invulnerable = 1000; player.flashTimer = 500;
+    spawnFloatingText(player.x + baseDrawWidth/2, player.y - 20, '-' + amount, '#ff0000');
+    spawnParticle(player.x + baseDrawWidth/2, player.y + baseDrawHeight/2, 'blood', '#ff0000', 4);
+    if (player.health <= 0) { player.health = 0; showDefeat(); }
+}
+
+function updateEnemies(dt) {
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        if (e.dead) { e.flashTimer -= dt; if (e.flashTimer <= 0) enemies.splice(i, 1); continue; }
+        if (e.frozen > 0) { e.frozen -= dt; continue; }
+        if (e.flashTimer > 0) e.flashTimer -= dt;
+        const targetX = player.x, targetLane = playerLaneY;
+        const dx = targetX - e.x, dLane = targetLane - e.laneY;
+        const distance = Math.sqrt(dx*dx + dLane*dLane);
+        if (distance > e.attackRange) {
+            e.x += (dx/distance) * e.speed * (e.frozen > 0 ? 0.3 : 1);
+            e.laneY += (dLane/distance) * e.speed * 0.5 * (e.frozen > 0 ? 0.3 : 1);
+            e.facingRight = dx > 0; e.state = 'walk';
+        } else {
+            e.state = 'idle';
+            if (performance.now() - e.lastAttack > e.attackCooldown) {
+                e.lastAttack = performance.now();
+                if (e.ranged && e.projectile) {
+                    spawnProjectile(e.x + (e.facingRight ? e.width : 0), e.laneY + e.height/2,
+                        player.x + baseDrawWidth/2, playerLaneY + baseDrawHeight/2, e.damage, 3, e.color, 'enemy', e.projectile);
+                } else {
+                    const distToPlayer = Math.abs((e.x + e.width/2) - (player.x + baseDrawWidth/2));
+                    const laneDist = Math.abs(e.laneY - playerLaneY);
+                    if (distToPlayer < 60 && laneDist < 40) {
+                        damagePlayer(e.damage); spawnParticle(player.x + baseDrawWidth/2, player.y + baseDrawHeight/2, 'hit', '#ff0000', 3);
+                    }
+                }
+            }
+        }
+        e.laneY = Math.max(laneTop, Math.min(laneBottom, e.laneY));
+        e.x = Math.max(-100, Math.min(canvas.width + 100, e.x)); e.y = e.laneY;
+        e.animTimer += dt; if (e.animTimer > 200) { e.animFrame = (e.animFrame + 1) % 4; e.animTimer = 0; }
+    }
+}
+
+function updateBoss(dt, time) {
+    if (!boss || boss.dead) return;
+    if (boss.introTimer > 0) { boss.introTimer -= dt; boss.x = lerp(boss.x, canvas.width - 200, 0.02); return; }
+    if (boss.frozen > 0) { boss.frozen -= dt; return; }
+    if (boss.flashTimer > 0) boss.flashTimer -= dt;
+    const targetX = player.x, targetLane = playerLaneY;
+    const dx = targetX - boss.x, dLane = targetLane - boss.laneY;
+    const distance = Math.sqrt(dx*dx + dLane*dLane);
+    switch(boss.pattern) {
+        case 'aggressive': if (distance > 70) { boss.x += (dx/distance) * boss.speed * 1.5; boss.laneY += (dLane/distance) * boss.speed * 0.8; } break;
+        case 'ranged': if (distance < 100) boss.x -= (dx/distance) * boss.speed; else if (distance > 200) boss.x += (dx/distance) * boss.speed; break;
+        case 'berserk': boss.x += (dx/distance) * boss.speed * 2; boss.laneY += (dLane/distance) * boss.speed; break;
+        case 'stealth': if (time % 5000 >= 2000) { boss.x += (dx/distance) * boss.speed * 1.3; } break;
+        case 'tank': boss.x += (dx/distance) * boss.speed * 0.7; break;
+        default: if (distance > boss.attackRange) { boss.x += (dx/distance) * boss.speed; boss.laneY += (dLane/distance) * boss.speed * 0.5; }
+    }
+    boss.facingRight = dx > 0;
+    boss.laneY = Math.max(laneTop, Math.min(laneBottom, boss.laneY)); boss.y = boss.laneY;
+    if (performance.now() - boss.lastAttack > boss.attackCooldown) {
+        boss.lastAttack = performance.now();
+        if (boss.ranged) {
+            spawnProjectile(boss.x + (boss.facingRight ? boss.width : 0), boss.laneY + boss.height/2,
+                player.x + baseDrawWidth/2, playerLaneY + baseDrawHeight/2, boss.damage, 4, boss.color, 'boss', boss.special);
+        } else {
+            const distToPlayer = Math.abs((boss.x + boss.width/2) - (player.x + baseDrawWidth/2));
+            const laneDist = Math.abs(boss.laneY - playerLaneY);
+            if (distToPlayer < 80 && laneDist < 50) { damagePlayer(boss.damage); spawnParticle(player.x + baseDrawWidth/2, player.y + baseDrawHeight/2, 'hit', '#ff0000', 5); }
+        }
+    }
+    if (performance.now() - boss.lastSpecial > boss.specialCooldown) {
+        boss.lastSpecial = performance.now();
+        spawnFloatingText(boss.x + boss.width/2, boss.y - 40, '!' + boss.special.toUpperCase() + '!', '#ff0000');
+        if (boss.special === 'ground_pound') {
+            const distToPlayer = Math.abs((boss.x + boss.width/2) - (player.x + baseDrawWidth/2));
+            if (distToPlayer < 200) damagePlayer(boss.specialDamage);
+            spawnParticle(boss.x + boss.width/2, boss.y + boss.height, 'explosion', '#8B4513', 12);
+        } else if (boss.special === 'shadow_clone' && boss.name === 'Noob Saibot') {
+            for (let j = 0; j < 2; j++) {
+                if (enemies.length >= MAX_ACTIVE_ENEMIES) break;
+                const clone = createEnemy('shadow_clone', boss.x + rand(-100,100), boss.laneY + rand(-30,30));
+                if (clone) enemies.push(clone);
+            }
+        } else if (boss.ranged) {
+            spawnProjectile(boss.x + boss.width/2, boss.laneY + boss.height/2,
+                player.x + baseDrawWidth/2, playerLaneY + baseDrawHeight/2, boss.specialDamage, 5, '#ff0000', 'boss', 'special');
+        }
+    }
+    boss.animTimer += dt; if (boss.animTimer > 250) { boss.animFrame = (boss.animFrame + 1) % 4; boss.animTimer = 0; }
+}
+
+function updateProjectiles(dt) {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt;
+        if (p.life <= 0) { projectiles.splice(i, 1); continue; }
+        
+        if (p.owner === 'player' && p.type === 'ice_projectile') {
+            let hit = false;
+            for (let e of enemies) {
+                if (e.dead) continue;
+                const px = p.x, py = p.y;
+                const ex = e.x + e.width/2, ey = e.laneY + e.height/2;
+                if (dist(px, py, ex, ey) < 40) {
+                    e.frozen = 4000; spawnIceEffect(ex, ey);
+                    spawnFloatingText(ex, ey - 30, '¡CONGELADO!', '#a0e6ff');
+                    hit = true; break;
+                }
+            }
+            if (midBoss && !midBoss.dead && !hit) {
+                const mx = midBoss.x + midBoss.width/2, my = midBoss.laneY + midBoss.height/2;
+                if (dist(p.x, p.y, mx, my) < 50) {
+                    midBoss.frozen = 2500; spawnIceEffect(mx, my);
+                    spawnFloatingText(mx, my - 30, '¡CONGELADO!', '#a0e6ff');
+                    hit = true;
+                }
+            }
+            if (boss && !boss.dead && !hit) {
+                const bx = boss.x + boss.width/2, by = boss.laneY + boss.height/2;
+                if (dist(p.x, p.y, bx, by) < 50) {
+                    boss.frozen = 2000; spawnIceEffect(bx, by);
+                    spawnFloatingText(bx, by - 30, '¡CONGELADO!', '#a0e6ff');
+                    hit = true;
+                }
+            }
+            if (hit) { projectiles.splice(i, 1); continue; }
+        }
+        
+        if (p.owner !== 'player') {
+            const px = player.x + baseDrawWidth/2, py = playerLaneY + baseDrawHeight/2;
+            if (dist(p.x, p.y, px, py) < 30) { damagePlayer(p.damage); projectiles.splice(i, 1); spawnParticle(px, py, 'explosion', p.color, 5); }
+        }
+        if (p.x < -50 || p.x > canvas.width + 50 || p.y < -50 || p.y > canvas.height + 50) projectiles.splice(i, 1);
+    }
+}
+
+function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += p.gravity || 0; p.life -= dt;
+        if (p.rotation !== undefined) p.rotation += p.rotSpeed || 0;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+}
+
+function updateFloatingTexts(dt) {
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i]; ft.timer += dt; ft.y += ft.vy;
+        if (ft.timer >= ft.life) floatingTexts.splice(i, 1);
+    }
+}
+
+function lightenColor(hex, percent) {
+    const num = parseInt(hex.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.min(255, (num >> 16) + amt);
+    const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+    const B = Math.min(255, (num & 0x0000FF) + amt);
+    return 'rgb(' + R + ',' + G + ',' + B + ')';
+}
+
+// Efecto PLACEHOLDER de congelación: tiñe de azul al personaje mientras e.frozen/boss.frozen > 0.
+// TODO: reemplazar por un sprite real de "personaje congelado" cuando esté disponible.
+function drawFrozenTint(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.globalAlpha = 0.6 + Math.sin(performance.now() / 150) * 0.15;
+    ctx.fillStyle = '#3aa9ff';
+    ctx.fillRect(x, y, w, h);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.35 + Math.sin(performance.now() / 120) * 0.15;
+    ctx.fillStyle = '#a0e6ff';
+    ctx.fillRect(x, y, w, h);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = '#eaf9ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    ctx.restore();
+}
+
+function drawEnemy(ctx, e, time) {
+    const depthRatio = (laneBottom - e.laneY) / Math.max(1, laneBottom - laneTop);
+    const eScale = 1 - depthRatio * 0.15;
+    const w = e.width * eScale, h = e.height * eScale;
+    const x = e.x, y = e.laneY + baseDrawHeight - h;
+    ctx.save();
+    if (e.flashTimer > 0) ctx.globalAlpha = 0.6 + Math.sin(time / 30) * 0.4;
+    ctx.fillStyle = e.color; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x + w*0.1, y + h*0.15, w*0.8, h*0.25);
+    ctx.fillStyle = e.flashTimer > 0 ? '#fff' : e.lightColor;
+    ctx.fillRect(x + w*0.25, y, w*0.5, h*0.2);
+    ctx.fillStyle = '#fff'; const eyeGlow = Math.sin(time / 200) * 0.3 + 0.7; ctx.globalAlpha = eyeGlow;
+    ctx.fillRect(x + w*0.32, y + h*0.06, w*0.12, h*0.06); ctx.fillRect(x + w*0.56, y + h*0.06, w*0.12, h*0.06); ctx.globalAlpha = 1;
+    if (e.type.includes('tarkatan') || e.type.includes('baraka')) {
+        ctx.fillStyle = '#C0C0C0'; ctx.beginPath(); ctx.moveTo(x + (e.facingRight ? w : 0), y + h*0.3);
+        ctx.lineTo(x + (e.facingRight ? w + 20 : -20), y + h*0.5); ctx.lineTo(x + (e.facingRight ? w : 0), y + h*0.7); ctx.fill();
+    }
+    if (e.type.includes('cyborg') || e.type.includes('sektor') || e.type.includes('cyrax')) {
+        ctx.fillStyle = '#ff0000'; ctx.fillRect(x + w*0.32, y + h*0.07, w*0.12, h*0.04); ctx.fillRect(x + w*0.56, y + h*0.07, w*0.12, h*0.04);
+    }
+    if (e.type.includes('reptile')) { ctx.fillStyle = '#7CFC00'; ctx.globalAlpha = 0.6; ctx.fillRect(x + (e.facingRight ? w : -10), y + h*0.15, 10, 4); ctx.globalAlpha = 1; }
+    if (e.ethereal) ctx.globalAlpha = 0.5 + Math.sin(time / 300) * 0.3;
+    ctx.restore();
+
+    // EFECTO DE CONGELACIÓN: tinte azul placeholder (ver drawFrozenTint)
+    if (e.frozen > 0) {
+        drawFrozenTint(ctx, x, y, w, h);
+    }
+    if (!e.dead) {
+        const barW = w * 1.2, barH = 5, barX = x + w/2 - barW/2, barY = y - 10;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+        const hpPct = e.health / e.maxHealth;
+        ctx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f1c40f' : '#e74c3c';
+        ctx.fillRect(barX, barY, barW * hpPct, barH);
+    }
+}
+
+function drawBoss(ctx, boss, time) {
+    const depthRatio = (laneBottom - boss.laneY) / Math.max(1, laneBottom - laneTop);
+    const bScale = 1 - depthRatio * 0.15;
+    const w = boss.width * bScale, h = boss.height * bScale;
+    const x = boss.x, y = boss.laneY + baseDrawHeight - h;
+    ctx.save();
+    if (boss.flashTimer > 0) ctx.globalAlpha = 0.6 + Math.sin(time / 30) * 0.4;
+    if (boss.pattern === 'stealth' && time % 5000 < 2000) ctx.globalAlpha = 0.2;
+    const haloAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = haloAlpha * 0.3; ctx.fillStyle = boss.color;
+    ctx.fillRect(x - 6, y - 6, w + 12, h + 12);
+    ctx.globalAlpha = haloAlpha;
+    ctx.fillStyle = boss.color; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(x + w*0.05, y + h*0.1, w*0.9, h*0.3); ctx.fillRect(x + w*0.15, y + h*0.5, w*0.7, h*0.2);
+    ctx.fillStyle = boss.lightColor; ctx.fillRect(x + w*0.2, y, w*0.6, h*0.18);
+    ctx.fillStyle = '#fff'; const glow = Math.sin(time / 150) * 0.2 + 0.8; ctx.globalAlpha = glow;
+    ctx.fillRect(x + w*0.28, y + h*0.05, w*0.15, h*0.06); ctx.fillRect(x + w*0.57, y + h*0.05, w*0.15, h*0.06); ctx.globalAlpha = 1;
+    if (boss.name === 'Goro') { ctx.fillStyle = boss.color; ctx.fillRect(x - w*0.15, y + h*0.25, w*0.2, h*0.4); ctx.fillRect(x + w*0.95, y + h*0.25, w*0.2, h*0.4); }
+    if (boss.name === 'Scorpion') { ctx.fillStyle = '#FFD700'; ctx.fillRect(x + w*0.25, y + h*0.02, w*0.5, h*0.12); }
+    if (boss.name === 'Noob Saibot') { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x + w*0.1, y + h*0.6, w*0.8, h*0.3); }
+    ctx.restore();
+    
+    if (boss.frozen > 0) {
+        drawFrozenTint(ctx, x, y, w, h);
+    }
+    
+    const barW = Math.min(w * 1.5, 200), barH = 8, barX = x + w/2 - barW/2, barY = y - 18;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4);
+    ctx.fillStyle = '#333'; ctx.fillRect(barX, barY, barW, barH);
+    const hpPct = boss.health / boss.maxHealth;
+    ctx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f1c40f' : '#e74c3c';
+    ctx.fillRect(barX, barY, barW * hpPct, barH);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(boss.name.toUpperCase(), x + w/2, barY - 5);
+}
+
+function drawProjectiles(ctx) {
+    for (const p of projectiles) {
+        ctx.save(); 
+        if (p.type === 'ice_projectile') {
+            ctx.globalAlpha = 0.95;
+            const pulse = 0.85 + Math.sin(performance.now()/80)*0.15;
+            if (p.sprite && p.sprite.complete) {
+                ctx.translate(p.x, p.y);
+                // Voltear el sprite si va hacia la izquierda
+                if (p.vx < 0) ctx.scale(-1, 1);
+                const w = p.sprite.width * pulse;
+                const h = p.sprite.height * pulse;
+                ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
+                // Brillo adicional
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = 0.3 + Math.sin(performance.now()/60)*0.2;
+                ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
+                ctx.globalCompositeOperation = 'source-over';
+            } else {
+                ctx.fillStyle = '#a0e6ff'; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.restore(); continue;
+        }
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size + 4, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        if (p.type === 'fireball' || p.type === 'hellfire') {
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size + 2, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#ff6600'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2); ctx.fill();
+        } else if (p.type === 'acid') { ctx.fillStyle = '#7CFC00'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }
+        else if (p.type === 'dark_orb') { ctx.fillStyle = '#4B0082'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size + 3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#9370DB'; ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2); ctx.fill(); }
+        else { ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+    }
+}
+
+function drawParticles(ctx) {
+    for (const p of particles) {
+        const alpha = p.life / p.maxLife; ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = p.color;
+        if (p.type === 'ice') { ctx.translate(p.x, p.y); ctx.rotate(p.rotation || 0); ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); ctx.strokeStyle = '#fff'; ctx.strokeRect(-p.size/2, -p.size/2, p.size, p.size); }
+        else if (p.type === 'blood') { ctx.beginPath(); ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2); ctx.fill(); }
+        else { ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+    }
+}
+
+function drawBackground(ctx, lvl) {
+    const colors = lvl ? lvl.bgColor : [10, 14, 26];
+    const ground = lvl ? lvl.groundColor : [30, 35, 50];
+    ctx.fillStyle = 'rgb(' + colors[0] + ',' + colors[1] + ',' + colors[2] + ')'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (lvl) {
+        ctx.fillStyle = 'rgba(' + ground[0] + ',' + ground[1] + ',' + ground[2] + ', 0.3)';
+        for (let i = 0; i < 8; i++) { const h = 50 + Math.sin(i * 1.5) * 30; const w = 40 + Math.cos(i * 2) * 20; const x = (i / 8) * canvas.width + Math.sin(Date.now() / 10000 + i) * 10; ctx.fillRect(x, laneTop - h, w, h); }
+    }
+    ctx.fillStyle = 'rgba(' + ground[0] + ',' + ground[1] + ',' + ground[2] + ', 0.5)';
+    ctx.fillRect(0, laneTop, canvas.width, (laneBottom - laneTop) + baseDrawHeight + 24);
+    ctx.fillStyle = 'rgb(' + (ground[0] + 20) + ',' + (ground[1] + 20) + ',' + (ground[2] + 20) + ')';
+    ctx.fillRect(0, laneBottom + baseDrawHeight, canvas.width, 4);
+}
+
+function drawPlayerPlaceholder(ctx, drawX, drawY, width, height, facingRight, time) {
+    ctx.save(); ctx.translate(drawX + width/2, drawY + height/2);
+    if (!facingRight) ctx.scale(-1, 1);
+    const s = Math.min(width, height) / 100; ctx.scale(s, s);
+    ctx.fillStyle = '#a0e6ff'; ctx.beginPath(); ctx.arc(0, -35, 18, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#0a5c5c'; ctx.fillRect(-16, -42, 32, 14);
+    ctx.fillStyle = '#fff'; ctx.fillRect(-10, -38, 6, 4); ctx.fillRect(4, -38, 6, 4);
+    ctx.fillStyle = '#4ecca3'; ctx.fillRect(-18, -20, 36, 45);
+    ctx.fillStyle = '#ffd700'; ctx.fillRect(-20, 15, 40, 6);
+    ctx.fillStyle = '#a0e6ff'; ctx.fillRect(-28, -18, 10, 35); ctx.fillRect(18, -18, 10, 35);
+    ctx.fillStyle = '#4ecca3'; ctx.fillRect(-14, 25, 12, 30); ctx.fillRect(2, 25, 12, 30);
+    ctx.restore();
+}
+
+function drawPlayer(ctx, time) {
+    const depthRatio = (laneBottom - playerLaneY) / Math.max(1, laneBottom - laneTop);
+    const perspectiveScale = 1 - depthRatio * 0.15;
+    const drawWidth = Math.round(baseDrawWidth * perspectiveScale);
+    const drawHeight = Math.round(baseDrawHeight * perspectiveScale);
+    const drawX = Math.round(player.x);
+    const drawY = Math.round(player.y + baseDrawHeight - drawHeight);
+    
+    // SPRITES DE HIELO
+    if (player.isAttacking) {
+        const atk = player.attackKind;
+        if (atk === 'ice_charge' || atk === 'ice_throw' || atk === 'ice_follow') {
+            let iceImg;
+            if (atk === 'ice_charge') iceImg = iceSprites.charge;
+            else if (atk === 'ice_throw') iceImg = iceSprites.throw;
+            else iceImg = iceSprites.hit;
+
+            if (!iceImg.complete || !iceImg.width) {
+                ctx.save(); if (player.flashTimer > 0) ctx.globalAlpha = 0.5 + Math.sin(time / 50) * 0.5; drawPlayerPlaceholder(ctx, drawX, drawY, drawWidth, drawHeight, player.facingRight, time); ctx.restore(); return;
+            }
+
+            let srcW = iceImg.width, srcH = iceImg.height;
+            // Mismo esquema de anclaje que punch/kick: se escala respecto a baseDrawHeight y se
+            // ancla por los pies (base) y por el lado en el que mira el personaje, en vez de
+            // centrarlo — así no "salta" al pasar de/hacia el sprite idle.
+            const aspectScale = (baseDrawHeight / srcH) * iceCustomScales[atk];
+            const finalW = Math.round(srcW * aspectScale * perspectiveScale);
+            const finalH = Math.round(srcH * aspectScale * perspectiveScale);
+            const offsetX = Math.round(iceOffsets[atk] * player.scale);
+            const dy = Math.round(drawY + drawHeight - finalH + iceVerticalOffsets[atk]);
+
+            ctx.save();
+            if (player.flashTimer > 0) ctx.globalAlpha = 0.5 + Math.sin(time / 50) * 0.5;
+            if (!player.facingRight) {
+                ctx.translate(drawX + finalW, dy);
+                ctx.scale(-1, 1);
+                ctx.drawImage(iceImg, 0, 0, srcW, srcH, -offsetX, 0, finalW, finalH);
+            } else {
+                ctx.drawImage(iceImg, 0, 0, srcW, srcH, drawX + offsetX, dy, finalW, finalH);
+            }
+            ctx.restore();
+            return;
+        }
+    }
+
+    let sourceImg = currentSprite;
+    if (player.isAttacking) {
+        const atk = player.attackKind;
+        if (atk === 'punch') sourceImg = playerSprites.punch;
+        else if (atk === 'punch2') sourceImg = playerSprites.punch2;
+        else if (atk === 'kick2') sourceImg = playerSprites.kick2;
+        else if (atk === 'punchAir') sourceImg = playerSprites.punchAir;
+        else if (atk === 'kickAir') sourceImg = playerSprites.kickAir;
+        else sourceImg = playerSprites.kick;
+    }
+    
+    if (!sourceImg.complete || !sourceImg.width) {
+        ctx.save();
+        if (player.flashTimer > 0) ctx.globalAlpha = 0.5 + Math.sin(time / 50) * 0.5;
+        drawPlayerPlaceholder(ctx, drawX, drawY, drawWidth, drawHeight, player.facingRight, time);
+        ctx.restore();
+        return;
+    }
+    
+    let sourceX = 0, sourceY = 0, sourceW = 0, sourceH = 0;
+    let targetDrawWidth = drawWidth, targetDrawHeight = drawHeight, finalDrawY = drawY, offset = 0;
+
+    if (player.isAttacking) {
+        const atk = player.attackKind;
+        if (atk === 'punch') {
+            const sfw = sourceImg.width / totalFrames;
+            sourceX = Math.floor((currentFrame * sfw) + cropAdjusts.punch.x[currentFrame]);
+            sourceW = Math.floor(sfw + cropAdjusts.punch.w[currentFrame]); sourceH = sourceImg.height;
+            offset = Math.round(frameOffsets.punch[currentFrame] * player.scale);
+            const aspectScale = (baseDrawHeight / sourceH) * customScales.punch;
+            targetDrawWidth = Math.round(sourceW * aspectScale * perspectiveScale);
+            targetDrawHeight = Math.round(sourceH * aspectScale * perspectiveScale);
+            finalDrawY = Math.round(drawY + verticalOffsets.punch);
+        } else if (atk === 'punch2') {
+            const sfw = sourceImg.width / totalFrames;
+            sourceX = Math.floor((currentFrame * sfw) + cropAdjusts.punch2.x[currentFrame]);
+            sourceW = Math.floor(sfw + cropAdjusts.punch2.w[currentFrame]); sourceH = sourceImg.height;
+            offset = Math.round(frameOffsets.punch2[currentFrame] * player.scale);
+            const aspectScale = (baseDrawHeight / sourceH) * customScales.punch2;
+            targetDrawWidth = Math.round(sourceW * aspectScale * perspectiveScale);
+            targetDrawHeight = Math.round(sourceH * aspectScale * perspectiveScale);
+            finalDrawY = Math.round(drawY + verticalOffsets.punch2);
+        } else if (atk === 'kick2') {
+            const sfw = sourceImg.width / totalFrames;
+            sourceX = Math.floor(currentFrame * sfw); sourceW = Math.floor(sfw); sourceH = sourceImg.height;
+            offset = Math.round(frameOffsets.kick2[currentFrame] * player.scale);
+            const aspectScale = (baseDrawHeight / sourceH) * customScales.kick2;
+            targetDrawWidth = Math.round(sourceW * aspectScale * perspectiveScale);
+            targetDrawHeight = Math.round(sourceH * aspectScale * perspectiveScale);
+            finalDrawY = Math.round(drawY + verticalOffsets.kick2);
+        } else if (atk === 'kick') {
+            const sfw = sourceImg.width / totalFrames;
+            sourceX = Math.floor(currentFrame * sfw); sourceW = Math.floor(sfw); sourceH = sourceImg.height;
+            offset = Math.round(frameOffsets.kick[currentFrame] * player.scale);
+            const aspectScale = (baseDrawHeight / sourceH) * customScales.kick;
+            targetDrawWidth = Math.round(sourceW * aspectScale * perspectiveScale);
+            targetDrawHeight = Math.round(sourceH * aspectScale * perspectiveScale);
+            finalDrawY = Math.round(drawY + verticalOffsets.kick);
+        } else if (atk === 'punchAir') {
+            const sfw = sourceImg.width / totalFrames;
+            sourceX = Math.floor((airSourceFrames.punchAir * sfw) + cropAdjusts.punchAir.x[0]);
+            sourceW = Math.floor(sfw + cropAdjusts.punchAir.w[0]); sourceH = sourceImg.height;
+            offset = Math.round(frameOffsets.punchAir[0] * player.scale);
+            const aspectScale = (baseDrawHeight / sourceH) * customScales.punchAir;
+            targetDrawWidth = Math.round(sourceW * aspectScale * perspectiveScale);
+            targetDrawHeight = Math.round(sourceH * aspectScale * perspectiveScale);
+            finalDrawY = Math.round(drawY + verticalOffsets.punchAir);
+        } else if (atk === 'kickAir') {
+            const sfw = sourceImg.width / totalFrames;
+            sourceX = Math.floor((airSourceFrames.kickAir * sfw) + cropAdjusts.kickAir.x[0]);
+            sourceW = Math.floor(sfw + cropAdjusts.kickAir.w[0]); sourceH = sourceImg.height;
+            offset = Math.round(frameOffsets.kickAir[0] * player.scale);
+            const aspectScale = (baseDrawHeight / sourceH) * customScales.kickAir;
+            targetDrawWidth = Math.round(sourceW * aspectScale * perspectiveScale);
+            targetDrawHeight = Math.round(sourceH * aspectScale * perspectiveScale);
+            finalDrawY = Math.round(drawY + verticalOffsets.kickAir);
+        }
+    } else {
+        const sfw = sourceImg.width / totalFrames; 
+        const sfh = sourceImg.height;
+        sourceX = Math.floor(currentFrame * sfw); sourceY = 0; sourceW = Math.floor(sfw); sourceH = Math.floor(sfh);
+        let currentOffset = [0,0,0,0];
+        if (currentSprite === playerSprites.idle) currentOffset = frameOffsets.idle;
+        else if (currentSprite === playerSprites.walk) currentOffset = frameOffsets.walk;
+        else if (currentSprite === playerSprites.jump) currentOffset = frameOffsets.jump;
+        else if (currentSprite === playerSprites.kick) currentOffset = frameOffsets.kick;
+        offset = Math.round(currentOffset[currentFrame] * player.scale);
+        finalDrawY = drawY;
+    }
+
+    ctx.save();
+    if (player.flashTimer > 0) ctx.globalAlpha = 0.5 + Math.sin(time / 50) * 0.5;
+    if (!player.facingRight) {
+        ctx.translate(drawX + targetDrawWidth, finalDrawY); ctx.scale(-1, 1);
+        ctx.drawImage(sourceImg, sourceX, sourceY, sourceW, sourceH, -offset, 0, targetDrawWidth, targetDrawHeight);
+    } else {
+        ctx.drawImage(sourceImg, sourceX, sourceY, sourceW, sourceH, drawX + offset, finalDrawY, targetDrawWidth, targetDrawHeight);
+    }
+    ctx.restore();
+}
+
+function drawFloatingTexts(ctx) {
+    for (const ft of floatingTexts) {
+        const alpha = 1 - (ft.timer / ft.life); ctx.save(); ctx.globalAlpha = alpha;
+        ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = ft.color; ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+        ctx.lineWidth = 3; ctx.textAlign = 'center'; ctx.strokeText(ft.text, ft.x, ft.y); ctx.fillText(ft.text, ft.x, ft.y); ctx.restore();
+    }
+}
+
+function updateHUD() {
+    const playerHpPct = Math.max(0, player.health / player.maxHealth);
+    document.getElementById('player-hp').style.width = (playerHpPct * 100) + '%';
+    document.getElementById('player-hp').style.background = playerHpPct > 0.5 ? '#4ecca3' : playerHpPct > 0.25 ? '#f1c40f' : '#e74c3c';
+    document.getElementById('score-display').textContent = score;
+    if (boss) {
+        const bossHpPct = Math.max(0, boss.health / boss.maxHealth);
+        document.getElementById('boss-hp').style.width = (bossHpPct * 100) + '%';
+        document.getElementById('boss-hp').style.background = bossHpPct > 0.5 ? '#e74c3c' : bossHpPct > 0.25 ? '#f1c40f' : '#ff0000';
+    } else if (midBoss) {
+        const midHpPct = Math.max(0, midBoss.health / midBoss.maxHealth);
+        document.getElementById('boss-hp').style.width = (midHpPct * 100) + '%';
+        document.getElementById('boss-hp').style.background = '#ff4500';
+    } else {
+        document.getElementById('boss-hp').style.width = '0%';
+    }
+}
+
+function showMenu(menuId) {
+    document.querySelectorAll('.menu-overlay').forEach(el => el.classList.add('hidden'));
+    if (menuId !== 'none') document.getElementById(menuId).classList.remove('hidden');
+}
+
+function togglePause() {
+    if (currentState === GameState.PLAYING) {
+        currentState = GameState.PAUSED;
+        showMenu('pause-screen');
+    } else if (currentState === GameState.PAUSED) {
+        currentState = GameState.PLAYING;
+        showMenu('none');
+    }
+}
+
+function showStory(levelIndex) {
+    currentLevel = levelIndex;
+    const lvl = LEVELS[levelIndex];
+    document.getElementById('story-text').innerHTML =
+        '<div class="chapter">NIVEL ' + lvl.id + ': ' + lvl.name + '</div>' +
+        '<div style="color:#4ecca3;font-style:italic;margin-bottom:10px;">' + lvl.subtitle + '</div>' +
+        '<p>' + lvl.story + '</p>' +
+        '<p style="margin-top:15px;">Jefe Final: <span class="boss-name">' + lvl.boss + '</span> &mdash; ' + lvl.bossTitle + '</p>';
+    showMenu('story-screen');
+}
+
+function showVictory() {
+    currentState = GameState.VICTORY;
+    const lvl = LEVELS[currentLevel];
+    if (!clearedLevels.includes(currentLevel)) { clearedLevels.push(currentLevel); score += 500; }
+    if (currentLevel + 1 < LEVELS.length && !clearedLevels.includes(currentLevel + 1)) {
+        unlockedLevels = Math.max(unlockedLevels, currentLevel + 2);
+    }
+    saveProgress();
+    document.getElementById('result-title').textContent = 'VICTORIA!';
+    document.getElementById('result-title').style.background = 'linear-gradient(180deg, #ffd700 0%, #f1c40f 100%)';
+    document.getElementById('result-title').style.webkitBackgroundClip = 'text';
+    document.getElementById('result-title').style.webkitTextFillColor = 'transparent';
+    document.getElementById('result-text').innerHTML =
+        '<p>Has derrotado a <strong style="color:#ffd700;">' + lvl.boss + '</strong> en ' + lvl.name + '.</p>' +
+        '<p style="margin-top:10px;">Puntuacion: <strong style="color:#f1c40f;">' + score + '</strong></p>' +
+        '<p style="margin-top:10px;color:#4ecca3;">' + (currentLevel < 7 ? 'El siguiente desafio te espera...' : 'Has completado la aventura! Bi-Han descansa en paz.') + '</p>';
+    document.getElementById('btn-next-level').style.display = currentLevel < 7 ? 'inline-block' : 'none';
+    document.getElementById('btn-retry').style.display = 'none';
+    showMenu('result-screen');
+}
+
+function showDefeat() {
+    currentState = GameState.DEFEAT;
+    document.getElementById('result-title').textContent = 'DERROTA';
+    document.getElementById('result-title').style.background = 'linear-gradient(180deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('result-title').style.webkitBackgroundClip = 'text';
+    document.getElementById('result-title').style.webkitTextFillColor = 'transparent';
+    document.getElementById('result-text').innerHTML =
+        '<p>Sub-Zero ha caido en combate...</p>' +
+        '<p style="margin-top:10px;">El Lin Kuei necesita que continues.</p>';
+    document.getElementById('btn-next-level').style.display = 'none';
+    document.getElementById('btn-retry').style.display = 'inline-block';
+    showMenu('result-screen');
+}
+
+function buildLevelSelect() {
+    const grid = document.getElementById('level-grid');
+    grid.innerHTML = '';
+    for (let i = 0; i < LEVELS.length; i++) {
+        const lvl = LEVELS[i];
+        const btn = document.createElement('button');
+        btn.className = 'level-btn';
+        if (i + 1 > unlockedLevels) btn.classList.add('locked');
+        else if (clearedLevels.includes(i)) btn.classList.add('cleared');
+        else if (i === currentLevel) btn.classList.add('current');
+        btn.innerHTML = '<span class="level-num">' + lvl.id + '</span><span class="level-boss">' + lvl.boss + '</span>';
+        if (i + 1 <= unlockedLevels) {
+            btn.onclick = () => showStory(i);
+        }
+        grid.appendChild(btn);
+    }
+}
+
+// ─── CONTROLES ───
+document.addEventListener('keydown', (e) => {
+    if(e.code === 'Escape' || e.code === 'KeyP') { 
+        if (currentState === GameState.PLAYING || currentState === GameState.PAUSED) {
+            togglePause();
+            e.preventDefault();
+        }
+    }
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if(e.code === 'ArrowUp' || e.code === 'KeyW') { keys.forward = true; e.preventDefault(); }
+    if(e.code === 'ArrowDown' || e.code === 'KeyS') { keys.backward = true; e.preventDefault(); }
+    if(e.code === 'Space') { keys.up = true; e.preventDefault(); }
+    if(e.code === 'KeyJ' && !e.repeat) requestAttack('punch');
+    if(e.code === 'KeyK' && !e.repeat) requestAttack('kick');
+    if(e.code === 'KeyI' && !e.repeat) requestAttack('ice_charge');
+});
+document.addEventListener('keyup', (e) => {
+    if(e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if(e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if(e.code === 'ArrowUp' || e.code === 'KeyW') keys.forward = false;
+    if(e.code === 'ArrowDown' || e.code === 'KeyS') keys.backward = false;
+    if(e.code === 'Space') keys.up = false;
+});
+
+function setupTouchButton(elementId, keyName) {
+    const el = document.getElementById(elementId);
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; el.classList.add('active'); });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; el.classList.remove('active'); });
+    el.addEventListener('touchcancel', (e) => { e.preventDefault(); keys[keyName] = false; el.classList.remove('active'); });
+}
+setupTouchButton('btn-left', 'left');
+setupTouchButton('btn-right', 'right');
+setupTouchButton('btn-jump', 'up');
+setupTouchButton('btn-forward', 'forward');
+setupTouchButton('btn-backward', 'backward');
+
+function setupAttackButton(elementId, kind) {
+    const el = document.getElementById(elementId);
+    const trigger = (e) => { e.preventDefault(); requestAttack(kind); el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 120); };
+    el.addEventListener('touchstart', trigger);
+    el.addEventListener('click', trigger);
+}
+setupAttackButton('btn-punch', 'punch');
+setupAttackButton('btn-kick', 'kick');
+
+function setupIceButton() {
+    const el = document.getElementById('btn-ice');
+    const trigger = (e) => { 
+        e.preventDefault(); 
+        requestAttack('ice_charge'); 
+        el.classList.add('active'); 
+        setTimeout(() => el.classList.remove('active'), 120); 
+    };
+    el.addEventListener('touchstart', trigger);
+    el.addEventListener('click', trigger);
+}
+setupIceButton();
+
+document.getElementById('btn-pause').onclick = togglePause;
+document.getElementById('btn-resume').onclick = togglePause;
+document.getElementById('btn-save').onclick = () => {
+    saveProgress();
+    spawnFloatingText(canvas.width/2, canvas.height/2, 'PROGRESO GUARDADO!', '#4ecca3');
+    togglePause();
+};
+document.getElementById('btn-quit').onclick = () => {
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('controls').style.display = 'none';
+    showMenu('main-menu');
+    currentState = GameState.MENU;
+};
+
+// ─── BOTONES DE MENU ───
+document.getElementById('btn-new-game').onclick = () => {
+    unlockedLevels = 1; clearedLevels = []; score = 0; saveProgress();
+    showStory(0);
+};
+document.getElementById('btn-continue').onclick = () => {
+    const nextLevel = clearedLevels.length;
+    if (nextLevel < LEVELS.length) showStory(nextLevel);
+};
+document.getElementById('btn-select-level').onclick = () => {
+    buildLevelSelect(); showMenu('level-select-menu');
+};
+document.getElementById('btn-how-to-play').onclick = () => showMenu('how-to-play');
+document.getElementById('btn-back-main').onclick = () => showMenu('main-menu');
+document.getElementById('btn-back-how').onclick = () => showMenu('main-menu');
+document.getElementById('btn-start-level').onclick = () => {
+    showMenu('none');
+    startLevel(currentLevel);
+};
+document.getElementById('btn-retry').onclick = () => {
+    showMenu('none');
+    startLevel(currentLevel);
+};
+document.getElementById('btn-next-level').onclick = () => {
+    if (currentLevel + 1 < LEVELS.length) {
+        showStory(currentLevel + 1);
+    }
+};
+document.getElementById('btn-menu').onclick = () => {
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('controls').style.display = 'none';
+    showMenu('main-menu');
+    currentState = GameState.MENU;
+};
+
+// ─── BUCLE PRINCIPAL ───
+function animate(time) {
+    try {
+    if (!lastTime) lastTime = time;
+    const deltaTime = time - lastTime;
+    if (!lastJumpFrameTime) lastJumpFrameTime = time;
+    const jumpDeltaTime = time - lastJumpFrameTime;
+    lastJumpFrameTime = time;
+
+    if (currentState === GameState.PLAYING) {
+        const lvl = LEVELS[currentLevel];
+        const isMoving = !player.isAttacking && (keys.left || keys.right || keys.forward || keys.backward);
+
+        if (player.attackRequested && !player.isAttacking) {
+            player.isAttacking = true; 
+            player.attackKind = player.attackRequested;
+            player.attackTimer = 0; 
+            player.lastAttackFrameTime = time; 
+            player.damageDealt = false;
+            player.iceProjectileSpawned = false;
+            
+            if (player.attackKind === 'ice_charge') {
+                currentSprite = iceSprites.charge;
+                currentFrame = 0;
+            } else if (player.attackKind === 'ice_throw') {
+                currentSprite = iceSprites.throw;
+                currentFrame = 0;
+            } else if (player.attackKind === 'ice_follow') {
+                currentSprite = iceSprites.hit;
+                currentFrame = 0;
+            } else {
+                if (player.attackKind === 'punch') currentSprite = playerSprites.punch;
+                else if (player.attackKind === 'punch2') currentSprite = playerSprites.punch2;
+                else if (player.attackKind === 'kick2') currentSprite = playerSprites.kick2;
+                else if (player.attackKind === 'punchAir') currentSprite = playerSprites.punchAir;
+                else if (player.attackKind === 'kickAir') currentSprite = playerSprites.kickAir;
+                else currentSprite = playerSprites.kick;
+                currentFrame = 0;
+            }
+            player.attackRequested = null;
+        }
+
+        if (!player.isAttacking) {
+            if (keys.forward) playerLaneY -= depthSpeed;
+            if (keys.backward) playerLaneY += depthSpeed;
+            if (playerLaneY < laneTop) playerLaneY = laneTop;
+            if (playerLaneY > laneBottom) playerLaneY = laneBottom;
+        }
+
+        const floorY = playerLaneY;
+        const wasOnGround = !player.isJumping;
+        if(keys.up && wasOnGround && !player.isAttacking) {
+            player.velocityY = player.jumpStrength; player.isJumping = true; player.isLanding = false;
+            lastJumpFrameTime = time; currentSprite = playerSprites.jump; currentFrame = 0;
+        }
+
+        if (player.isAttacking) { player.velocityX = 0; }
+        else if (keys.left) { player.velocityX = -player.speed; player.facingRight = false; }
+        else if (keys.right) { player.velocityX = player.speed; player.facingRight = true; }
+        else { player.velocityX = 0; }
+
+        player.x += player.velocityX;
+        if (player.isJumping) {
+            player.velocityY += player.gravity; player.y += player.velocityY;
+            if (player.y >= floorY) { player.y = floorY; player.velocityY = 0; player.isJumping = false; }
+        } else { player.y = floorY; }
+
+        const isInAir = player.isJumping;
+
+        if (player.isAttacking) {
+            let times = [];
+            if (player.attackKind === 'ice_charge') {
+                if (player.attackTimer > 300) {
+                    player.attackKind = 'ice_throw';
+                    player.attackTimer = 0;
+                }
+            } else if (player.attackKind === 'ice_throw') {
+                // Fase 1: subzero_ice1.png - la mano se extiende
+                // El proyectil aparece cerca de la mano a los 60ms
+                if (player.attackTimer > 60 && !player.iceProjectileSpawned) {
+                    player.iceProjectileSpawned = true;
+                    // Posición de la mano en subzero_ice1.png (cerca del personaje)
+                    const handOffset = player.facingRight ? baseDrawWidth * 0.82 : baseDrawWidth * 0.18;
+                    const projX = player.x + handOffset;
+                    const projY = playerLaneY + baseDrawHeight * 0.42;
+                    spawnAttachedIceProjectile(projX, projY);
+                }
+                if (player.attackTimer > 200) {
+                    // Pasa a follow-through: fija la trayectoria (hacia el enemigo, o hacia
+                    // donde mira el personaje si no hay ninguno en esa dirección) pero el
+                    // proyectil sigue "pegado" visualmente, alejándose poco a poco en subzero_ice2.png
+                    lockIceProjectileTrajectory();
+                    player.attackKind = 'ice_follow';
+                    player.attackTimer = 0;
+                }
+            } else if (player.attackKind === 'ice_follow') {
+                // Fase 2: subzero_ice2.png - follow-through, proyectil se aleja más
+                // manteniendo la trayectoria fijada, y al terminar la animación se suelta
+                // como proyectil libre que viaja hasta el enemigo (o hasta el borde si no hay ninguno)
+                if (player.attackTimer > 150) {
+                    releaseAttachedProjectile();
+                    player.isAttacking = false;
+                    player.attackKind = null;
+                    player.iceProjectileSpawned = false;
+                    currentSprite = (keys.left || keys.right || keys.forward || keys.backward) ? playerSprites.walk : playerSprites.idle;
+                    currentFrame = 0;
+                }
+            } else {
+                if (player.attackKind === 'punch') times = attackFrameTimes.punch;
+                else if (player.attackKind === 'punch2') times = attackFrameTimes.punch2;
+                else if (player.attackKind === 'kick2') times = attackFrameTimes.kick2;
+                else if (player.attackKind === 'punchAir') times = attackFrameTimes.punchAir;
+                else if (player.attackKind === 'kickAir') times = attackFrameTimes.kickAir;
+                else times = attackFrameTimes.kick;
+                player.attackTimer += (time - player.lastAttackFrameTime);
+                player.lastAttackFrameTime = time;
+                let cum = 0, frame = totalFrames - 1;
+                for (let i = 0; i < times.length; i++) { cum += times[i]; if (player.attackTimer < cum) { frame = i; break; } }
+                currentFrame = frame;
+                checkHit();
+                const totalAttackTime = times.reduce((a, b) => a + b, 0);
+                if (player.attackTimer >= totalAttackTime) {
+                    player.isAttacking = false; player.attackKind = null;
+                    player.iceProjectileSpawned = false;
+                    if (player.comboQueued) { player.attackRequested = player.comboQueued; player.comboQueued = null; }
+                    if (player.isJumping) { currentSprite = playerSprites.jump; currentFrame = 2; }
+                    else { currentSprite = (keys.left || keys.right || keys.forward || keys.backward) ? playerSprites.walk : playerSprites.idle; currentFrame = 0; }
+                    lastTime = time;
+                }
+            }
+            player.attackTimer += (time - player.lastAttackFrameTime);
+            player.lastAttackFrameTime = time;
+        } else if (isInAir) {
+            if (currentSprite !== playerSprites.jump) { currentSprite = playerSprites.jump; currentFrame = 0; jumpTimer = 0; lastJumpFrameTime = time; }
+            else { jumpTimer += jumpDeltaTime; }
+            const jumpFrameTimes = [150, 120, 260, 180];
+            if (jumpTimer < jumpFrameTimes[0]) currentFrame = 0;
+            else if (jumpTimer < jumpFrameTimes[0] + jumpFrameTimes[1]) currentFrame = 1;
+            else currentFrame = 2;
+        } else {
+            if (currentSprite === playerSprites.jump && !player.isLanding) {
+                player.isLanding = true; currentFrame = 3; landingTimer = 0;
+            }
+            if (player.isLanding) {
+                landingTimer += jumpDeltaTime;
+                const jumpFrameTimes = [150, 120, 260, 180];
+                if (landingTimer >= jumpFrameTimes[3]) {
+                    player.isLanding = false; currentSprite = isMoving ? playerSprites.walk : playerSprites.idle;
+                    currentFrame = 0; lastTime = time;
+                }
+            } else {
+                if (isMoving) { if (currentSprite !== playerSprites.walk) { currentSprite = playerSprites.walk; currentFrame = 0; } frameSpeed = 220; }
+                else { if (currentSprite !== playerSprites.idle) { currentSprite = playerSprites.idle; currentFrame = 0; } frameSpeed = 150; }
+                if (time - lastTime >= frameSpeed) { currentFrame = (currentFrame + 1) % totalFrames; lastTime = time; }
+            }
+        }
+
+        const maxX = canvas.width - (currentSprite.width / totalFrames * player.scale);
+        if (player.x < 0) player.x = 0;
+        if (player.x > maxX) player.x = maxX;
+
+        if (player.invulnerable > 0) player.invulnerable -= deltaTime;
+        if (player.flashTimer > 0) player.flashTimer -= deltaTime;
+
+        spawnTimer += deltaTime;
+        if (!bossSpawned && spawnTimer > lvl.spawnRate && enemiesDefeated < lvl.enemyCount) {
+            spawnEnemy(); 
+            spawnTimer = 0;
+        }
+        if (!bossSpawned && enemiesDefeated >= lvl.enemyCount && enemies.length === 0) {
+            if (lvl.hasMidBoss && !midBoss) {
+                midBoss = createBoss(lvl.midBoss, canvas.width - 150, (laneTop + laneBottom)/2);
+                spawnFloatingText(canvas.width/2, canvas.height/3, 'SCORPION APARECE!', '#ff4500');
+            } else if (!lvl.hasMidBoss || (midBoss && midBoss.dead)) {
+                spawnBoss();
+            }
+        }
+
+        updateEnemies(deltaTime);
+        updateBoss(deltaTime, time);
+        updateAttachedProjectile(deltaTime);
+        updateProjectiles(deltaTime);
+        updateParticles(deltaTime);
+        updateFloatingTexts(deltaTime);
+        updateHUD();
+    }
+
+    // ─── RENDERIZADO ───
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const lvl = currentState === GameState.PLAYING ? LEVELS[currentLevel] : null;
+    drawBackground(ctx, lvl);
+
+    if (currentState === GameState.PLAYING) {
+        for (const e of enemies) { if (!e.dead || e.flashTimer > 0) drawEnemy(ctx, e, time); }
+        if (midBoss && !midBoss.dead) drawBoss(ctx, midBoss, time);
+        if (boss && (!boss.dead || boss.flashTimer > 0)) drawBoss(ctx, boss, time);
+        drawProjectiles(ctx);
+        drawParticles(ctx);
+        drawPlayer(ctx, time);
+        drawAttachedProjectile(ctx, time);
+        drawFloatingTexts(ctx);
+    }
+
+    } catch (err) {
+        console.error('Error en el bucle de animación:', err);
+    } finally {
+        requestAnimationFrame(animate);
+    }
+}
+
+// ─── INICIALIZACIÓN ───
+let imagesLoaded = 0;
+const totalImages = 13;
+let initStarted = false;
+
+function startGameInit() {
+    if (initStarted) return;
+    initStarted = true;
+    setupCanvas();
+    window.addEventListener('resize', setupCanvas);
+    window.addEventListener('orientationchange', () => setTimeout(setupCanvas, 100));
+    try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch(e) {}
+    requestAnimationFrame(animate);
+}
+
+function checkImagesLoaded() {
+    imagesLoaded++;
+    if (imagesLoaded >= totalImages) {
+        startGameInit();
+    }
+}
+
+setTimeout(() => {
+    if (!initStarted) startGameInit();
+}, 3000);
+
+playerSprites.idle.onload = checkImagesLoaded; playerSprites.walk.onload = checkImagesLoaded;
+playerSprites.jump.onload = checkImagesLoaded; playerSprites.kick.onload = checkImagesLoaded;
+playerSprites.kick2.onload = checkImagesLoaded; playerSprites.punch.onload = checkImagesLoaded;
+playerSprites.punch2.onload = checkImagesLoaded; playerSprites.punchAir.onload = checkImagesLoaded;
+playerSprites.kickAir.onload = checkImagesLoaded;
+iceSprites.charge.onload = checkImagesLoaded; iceSprites.throw.onload = checkImagesLoaded;
+iceSprites.proj.onload = checkImagesLoaded; iceSprites.hit.onload = checkImagesLoaded;
+
+const allSprites = [playerSprites.idle, playerSprites.walk, playerSprites.jump, playerSprites.kick, playerSprites.kick2, playerSprites.punch, playerSprites.punch2, playerSprites.punchAir, playerSprites.kickAir, iceSprites.charge, iceSprites.throw, iceSprites.proj, iceSprites.hit];
+allSprites.forEach(s => s.onerror = () => checkImagesLoaded());
+
+document.getElementById('btn-continue').disabled = clearedLevels.length === 0;
+if (clearedLevels.length > 0) document.getElementById('btn-continue').removeAttribute('disabled');
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .catch((err) => console.error('Error registrando el service worker:', err));
+    });
+  }
+</script>
+</body>
+</html>
