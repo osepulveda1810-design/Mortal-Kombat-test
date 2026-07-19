@@ -790,17 +790,25 @@ function updateProjectiles(dt) {
                 if (e.dead) continue;
                 const px = p.x, py = p.y;
                 const ex = e.x + e.width/2, ey = e.laneY + e.height/2;
-                if (dist(px, py, ex, ey) < 35) {
-                    e.frozen = 3000; spawnIceEffect(ex, ey);
-                    spawnFloatingText(ex, ey - 20, '¡CONGELADO!', '#a0e6ff');
+                if (dist(px, py, ex, ey) < 40) {
+                    e.frozen = 4000; spawnIceEffect(ex, ey);
+                    spawnFloatingText(ex, ey - 30, '¡CONGELADO!', '#a0e6ff');
                     hit = true; break;
+                }
+            }
+            if (midBoss && !midBoss.dead && !hit) {
+                const mx = midBoss.x + midBoss.width/2, my = midBoss.laneY + midBoss.height/2;
+                if (dist(p.x, p.y, mx, my) < 50) {
+                    midBoss.frozen = 2500; spawnIceEffect(mx, my);
+                    spawnFloatingText(mx, my - 30, '¡CONGELADO!', '#a0e6ff');
+                    hit = true;
                 }
             }
             if (boss && !boss.dead && !hit) {
                 const bx = boss.x + boss.width/2, by = boss.laneY + boss.height/2;
-                if (dist(p.x, p.y, bx, by) < 45) {
-                    boss.frozen = 1500; spawnIceEffect(bx, by);
-                    spawnFloatingText(bx, by - 20, '¡CONGELADO!', '#a0e6ff');
+                if (dist(p.x, p.y, bx, by) < 50) {
+                    boss.frozen = 2000; spawnIceEffect(bx, by);
+                    spawnFloatingText(bx, by - 30, '¡CONGELADO!', '#a0e6ff');
                     hit = true;
                 }
             }
@@ -866,17 +874,23 @@ function drawEnemy(ctx, e, time) {
     // EFECTO DE CONGELACIÓN (subzero_ice2) MÁS PEQUEÑO Y ALINEADO AL SUELO
     if (e.frozen > 0) {
         if (iceSprites.hit && iceSprites.hit.complete) {
-            ctx.save(); ctx.globalAlpha = 0.85;
+            ctx.save(); 
+            ctx.globalAlpha = 0.9 + Math.sin(performance.now()/150)*0.1;
             let srcW = iceSprites.hit.width, srcH = iceSprites.hit.height;
-            let scale = (h / srcH) * 0.85; // 15% más pequeño que la altura del enemigo
+            let scale = (h / srcH) * 0.95;
             let finalW = srcW * scale;
             let finalH = srcH * scale;
-            let dx = x + (w - finalW) / 2; // Centrado horizontal
-            let dy = y + (h - finalH);     // Alineado al suelo
+            let dx = x + (w - finalW) / 2;
+            let dy = y + (h - finalH);
             ctx.drawImage(iceSprites.hit, dx, dy, finalW, finalH);
+            // Efecto de brillo de hielo
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = 0.25 + Math.sin(performance.now()/120)*0.15;
+            ctx.drawImage(iceSprites.hit, dx, dy, finalW, finalH);
+            ctx.globalCompositeOperation = 'source-over';
             ctx.restore();
         } else {
-            ctx.save(); ctx.globalAlpha = 0.4; ctx.fillStyle = '#a0e6ff'; ctx.fillRect(x, y, w, h); ctx.restore();
+            ctx.save(); ctx.globalAlpha = 0.5 + Math.sin(performance.now()/150)*0.2; ctx.fillStyle = '#a0e6ff'; ctx.fillRect(x, y, w, h); ctx.restore();
         }
     }
     if (!e.dead) {
@@ -912,17 +926,22 @@ function drawBoss(ctx, boss, time) {
     
     if (boss.frozen > 0) {
         if (iceSprites.hit && iceSprites.hit.complete) {
-            ctx.save(); ctx.globalAlpha = 0.5;
+            ctx.save(); 
+            ctx.globalAlpha = 0.85 + Math.sin(performance.now()/150)*0.15;
             let srcW = iceSprites.hit.width, srcH = iceSprites.hit.height;
-            let scale = (h / srcH) * 0.85;
+            let scale = (h / srcH) * 0.95;
             let finalW = srcW * scale;
             let finalH = srcH * scale;
             let dx = x + (w - finalW) / 2;
             let dy = y + (h - finalH);
             ctx.drawImage(iceSprites.hit, dx, dy, finalW, finalH);
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = 0.25 + Math.sin(performance.now()/120)*0.15;
+            ctx.drawImage(iceSprites.hit, dx, dy, finalW, finalH);
+            ctx.globalCompositeOperation = 'source-over';
             ctx.restore();
         } else {
-            ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = '#a0e6ff'; ctx.fillRect(x, y, w, h); ctx.restore();
+            ctx.save(); ctx.globalAlpha = 0.5 + Math.sin(performance.now()/150)*0.2; ctx.fillStyle = '#a0e6ff'; ctx.fillRect(x, y, w, h); ctx.restore();
         }
     }
     
@@ -940,13 +959,20 @@ function drawProjectiles(ctx) {
     for (const p of projectiles) {
         ctx.save(); 
         if (p.type === 'ice_projectile') {
-            ctx.globalAlpha = 0.9;
-            const scale = 0.8 + Math.sin(performance.now()/100)*0.1;
+            ctx.globalAlpha = 0.95;
+            const pulse = 0.85 + Math.sin(performance.now()/80)*0.15;
             if (p.sprite && p.sprite.complete) {
                 ctx.translate(p.x, p.y);
                 // Voltear el sprite si va hacia la izquierda
                 if (p.vx < 0) ctx.scale(-1, 1);
-                ctx.drawImage(p.sprite, -(p.sprite.width * scale)/2, -(p.sprite.height * scale)/2, p.sprite.width * scale, p.sprite.height * scale);
+                const w = p.sprite.width * pulse;
+                const h = p.sprite.height * pulse;
+                ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
+                // Brillo adicional
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = 0.3 + Math.sin(performance.now()/60)*0.2;
+                ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
+                ctx.globalCompositeOperation = 'source-over';
             } else {
                 ctx.fillStyle = '#a0e6ff'; ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.fill();
             }
@@ -1377,6 +1403,7 @@ function animate(time) {
             player.attackTimer = 0; 
             player.lastAttackFrameTime = time; 
             player.damageDealt = false;
+            player.iceProjectileSpawned = false;
             
             if (player.attackKind === 'ice_charge') {
                 currentSprite = iceSprites.charge;
@@ -1423,18 +1450,26 @@ function animate(time) {
         if (player.isAttacking) {
             let times = [];
             if (player.attackKind === 'ice_charge') {
-                if (player.attackTimer > 400) {
+                if (player.attackTimer > 300) {
                     player.attackKind = 'ice_throw';
                     player.attackTimer = 0;
-                    const projX = player.x + baseDrawWidth/2 + (player.facingRight ? 20 : -20);
-                    // Proyectil sale desde el pecho/mano (0.45 de altura)
-                    const projY = playerLaneY + baseDrawHeight * 0.45;
-                    spawnProjectileIce(projX, projY);
                 }
             } else if (player.attackKind === 'ice_throw') {
-                if (player.attackTimer > 300) {
+                // Disparar el proyectil a los 80ms de la animación de lanzamiento
+                // cuando la mano está completamente extendida
+                if (player.attackTimer > 80 && !player.iceProjectileSpawned) {
+                    player.iceProjectileSpawned = true;
+                    // Posición de la mano en el sprite subzero_ice1.png
+                    const handOffset = player.facingRight ? baseDrawWidth * 0.85 : baseDrawWidth * 0.15;
+                    const projX = player.x + handOffset;
+                    // Altura del pecho/mano (~0.42 de la altura del sprite)
+                    const projY = playerLaneY + baseDrawHeight * 0.42;
+                    spawnProjectileIce(projX, projY);
+                }
+                if (player.attackTimer > 350) {
                     player.isAttacking = false;
                     player.attackKind = null;
+                    player.iceProjectileSpawned = false;
                     currentSprite = (keys.left || keys.right || keys.forward || keys.backward) ? playerSprites.walk : playerSprites.idle;
                     currentFrame = 0;
                 }
@@ -1454,6 +1489,7 @@ function animate(time) {
                 const totalAttackTime = times.reduce((a, b) => a + b, 0);
                 if (player.attackTimer >= totalAttackTime) {
                     player.isAttacking = false; player.attackKind = null;
+                    player.iceProjectileSpawned = false;
                     if (player.comboQueued) { player.attackRequested = player.comboQueued; player.comboQueued = null; }
                     if (player.isJumping) { currentSprite = playerSprites.jump; currentFrame = 2; }
                     else { currentSprite = (keys.left || keys.right || keys.forward || keys.backward) ? playerSprites.walk : playerSprites.idle; currentFrame = 0; }
