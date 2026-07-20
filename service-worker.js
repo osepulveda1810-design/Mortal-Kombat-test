@@ -1,7 +1,7 @@
 // Service Worker - Sub-Zero Adventure
 // Sube este archivo a la RAÍZ del repo (mismo nivel que index.html) como "service-worker.js"
 
-const CACHE_VERSION = 'subzero-v1.18';
+const CACHE_VERSION = 'subzero-v1.19';
 const CACHE_NAME = `subzero-adventure-${CACHE_VERSION}`;
 
 // Todo lo necesario para que el juego cargue y funcione sin conexión.
