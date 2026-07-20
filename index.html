@@ -44,7 +44,7 @@
             letter-spacing: 4px; text-transform: uppercase;
         }
         .menu-subtitle { font-size: clamp(12px, 2.5vw, 18px); color: #4ecca3; margin-bottom: 30px; opacity: 0.8; }
-        
+
         /* Botones del menú más pequeños */
         .menu-btn {
             padding: 10px 28px; margin: 6px; font-size: clamp(12px, 2.5vw, 16px);
@@ -142,7 +142,7 @@
             filter: drop-shadow(0 0 10px rgba(160,230,255,1)) drop-shadow(0 0 4px #fff); }
         #btn-kick:active .boot-icon, #btn-kick.active .boot-icon { transform: scale(0.95) rotate(-3deg);
             filter: drop-shadow(0 0 10px rgba(160,230,255,1)) drop-shadow(0 0 4px #fff); }
-        
+
         /* NUEVO ESTILO PARA BOTÓN DE HIELO */
         #btn-ice {
             width: 60px; height: 60px; border-radius: 50%; padding: 0;
@@ -164,7 +164,7 @@
 
         #btn-jump { width: 80px; height: 80px; background: rgba(200,30,30,0.4); border-color: rgba(255,50,50,0.6); font-weight: bold; font-size: 16px; }
         #btn-jump:active, #btn-jump.active { background: rgba(255,50,50,0.8); }
-        
+
         @media (max-width: 500px) {
             .btn { width: 60px; height: 60px; font-size: 20px; }
             #btn-punch, #btn-kick { width: 58px; height: 58px; }
@@ -183,11 +183,11 @@
 </head>
 <body>
     <!-- Etiqueta de versión de prueba: cambiar SOLO el texto de acá en cada build -->
-    <div id="test-version-label" style="position:fixed; top:4px; left:6px; z-index:9999; font-family:sans-serif; font-size:11px; color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; pointer-events:none;">Test v1.11</div>
+    <div id="test-version-label" style="position:fixed; top:4px; left:6px; z-index:9999; font-family:sans-serif; font-size:11px; color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; pointer-events:none;">Test v1.12</div>
     <div id="game-container">
         <div id="canvas-wrapper">
             <canvas id="gameCanvas"></canvas>
-            
+
             <!-- HUD -->
             <div id="hud" style="display:none;">
                 <div class="hud-section">
@@ -205,15 +205,15 @@
 
             <!-- Pantalla de Pausa -->
             <div class="menu-overlay hidden" id="pause-screen">
-                <div class="menu-title" style="font-size:clamp(28px,6vw,56px);">PAUSA</div>
-                <div class="story-box" style="max-width:400px;">
+                <div class="menu-title" style="font-size:clamp(24px,5vw,44px);margin-bottom:12px;">PAUSA</div>
+                <div class="story-box" style="max-width:340px;padding:14px;margin-bottom:12px;font-size:clamp(12px,2vw,15px);">
                     <p style="margin:0;">El destino de Lin Kuei descansa en tus manos...</p>
-                    <p style="margin-top:8px;font-size:0.85em;color:#4ecca3;">Versión: Test v1.11</p>
+                    <p style="margin-top:6px;font-size:0.8em;color:#4ecca3;">Versión: Test v1.12</p>
                 </div>
-                <button class="menu-btn" id="btn-resume">Continuar</button>
-                <button class="menu-btn" id="btn-save">Guardar Progreso</button>
-                <button class="menu-btn" id="btn-check-update" style="background:rgba(241,196,15,0.15);border-color:rgba(241,196,15,0.5);color:#f1c40f;">Buscar Actualización</button>
-                <button class="menu-btn" id="btn-quit">Salir al Menú</button>
+                <button class="menu-btn" id="btn-resume" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);">Continuar</button>
+                <button class="menu-btn" id="btn-save" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);">Guardar Progreso</button>
+                <button class="menu-btn" id="btn-check-update" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);background:rgba(241,196,15,0.15);border-color:rgba(241,196,15,0.5);color:#f1c40f;">Buscar Actualización</button>
+                <button class="menu-btn" id="btn-quit" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);">Salir al Menú</button>
             </div>
 
             <!-- Menú Principal -->
@@ -224,6 +224,7 @@
                 <button class="menu-btn" id="btn-continue" disabled>Continuar</button>
                 <button class="menu-btn" id="btn-select-level">Seleccionar Nivel</button>
                 <button class="menu-btn" id="btn-how-to-play">Como Jugar</button>
+                <button class="menu-btn" id="btn-check-update-main" style="margin-top:10px;padding:6px 16px;font-size:clamp(10px,1.8vw,12px);background:rgba(241,196,15,0.1);border-color:rgba(241,196,15,0.4);color:#f1c40f;opacity:0.8;">🔄 Buscar Actualización</button>
             </div>
 
             <!-- Selección de Nivel -->
@@ -736,7 +737,7 @@ function spawnBoss() {
 function spawnProjectileIce(x, y) {
     let target = null;
     let minDist = Infinity;
-    
+
     for (let e of enemies) { if (!e.dead) { const d = dist(x, y, e.x + e.width/2, e.laneY + e.height/2); if (d < minDist) { minDist = d; target = e; } } }
     if (boss && !boss.dead) { const d = dist(x, y, boss.x + boss.width/2, boss.laneY + boss.height/2); if (d < minDist) { minDist = d; target = boss; } }
     if (midBoss && !midBoss.dead) { const d = dist(x, y, midBoss.x + midBoss.width/2, midBoss.laneY + midBoss.height/2); if (d < minDist) { minDist = d; target = midBoss; } }
@@ -744,7 +745,7 @@ function spawnProjectileIce(x, y) {
     const speed = 5.5;
     let vx = player.facingRight ? speed : -speed;
     let vy = 0;
-    
+
     if (target) {
         const dx = target.x + target.width/2 - x;
         const dy = target.laneY + target.height/2 - y;
@@ -763,7 +764,7 @@ function spawnProjectileIce(x, y) {
 
 function requestAttack(kind) {
     if (levelComplete || currentState === GameState.PAUSED) return;
-    
+
     if (kind === 'ice_charge') {
         if (!player.isAttacking && !player.isJumping) {
             player.attackRequested = 'ice_charge';
@@ -772,7 +773,7 @@ function requestAttack(kind) {
         }
         return;
     }
-    
+
     const now = performance.now();
     if (player.isJumping && !player.isAttacking) {
         if (kind === 'punch') { player.attackRequested = 'punchAir'; player.punchTapCount = 0; return; }
@@ -959,7 +960,7 @@ function updateProjectiles(dt) {
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i]; p.x += p.vx; p.y += p.vy; p.life -= dt;
         if (p.life <= 0) { projectiles.splice(i, 1); continue; }
-        
+
         if (p.owner === 'player' && p.type === 'ice_projectile') {
             let hit = false;
             for (let e of enemies) {
@@ -990,7 +991,7 @@ function updateProjectiles(dt) {
             }
             if (hit) { projectiles.splice(i, 1); continue; }
         }
-        
+
         if (p.owner !== 'player') {
             const px = player.x + baseDrawWidth/2, py = playerLaneY + baseDrawHeight/2;
             if (dist(p.x, p.y, px, py) < 30) { damagePlayer(p.damage); projectiles.splice(i, 1); spawnParticle(px, py, 'explosion', p.color, 5); }
@@ -1100,11 +1101,11 @@ function drawBoss(ctx, boss, time) {
     if (boss.name === 'Scorpion') { ctx.fillStyle = '#FFD700'; ctx.fillRect(x + w*0.25, y + h*0.02, w*0.5, h*0.12); }
     if (boss.name === 'Noob Saibot') { ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x + w*0.1, y + h*0.6, w*0.8, h*0.3); }
     ctx.restore();
-    
+
     if (boss.frozen > 0) {
         drawFrozenTint(ctx, x, y, w, h);
     }
-    
+
     const barW = Math.min(w * 1.5, 200), barH = 8, barX = x + w/2 - barW/2, barY = y - 18;
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4);
     ctx.fillStyle = '#333'; ctx.fillRect(barX, barY, barW, barH);
@@ -1197,7 +1198,7 @@ function drawPlayer(ctx, time) {
     const drawHeight = Math.round(baseDrawHeight * perspectiveScale);
     const drawX = Math.round(player.x);
     const drawY = Math.round(player.y + baseDrawHeight - drawHeight);
-    
+
     // SPRITES DE HIELO
     if (player.isAttacking) {
         const atk = player.attackKind;
@@ -1245,7 +1246,7 @@ function drawPlayer(ctx, time) {
         else if (atk === 'kickAir') sourceImg = playerSprites.kickAir;
         else sourceImg = playerSprites.kick;
     }
-    
+
     if (!sourceImg.complete || !sourceImg.width) {
         ctx.save();
         if (player.flashTimer > 0) ctx.globalAlpha = 0.5 + Math.sin(time / 50) * 0.5;
@@ -1253,7 +1254,7 @@ function drawPlayer(ctx, time) {
         ctx.restore();
         return;
     }
-    
+
     let sourceX = 0, sourceY = 0, sourceW = 0, sourceH = 0;
     let targetDrawWidth = drawWidth, targetDrawHeight = drawHeight, finalDrawY = drawY, offset = 0;
 
@@ -1514,10 +1515,28 @@ document.getElementById('btn-quit').onclick = () => {
     currentState = GameState.MENU;
 };
 
-// Botón de actualización: fuerza recarga limpia
+// Botón de actualización en menú de pausa
 if (document.getElementById('btn-check-update')) {
     document.getElementById('btn-check-update').onclick = () => {
-        // Desregistrar SW y limpiar caché, luego recargar
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then((regs) => {
+                Promise.all(regs.map(r => r.unregister())).then(() => {
+                  caches.keys().then((names) => {
+                    Promise.all(names.map(n => caches.delete(n))).then(() => {
+                      window.location.reload(true);
+                    });
+                  });
+                });
+            });
+        } else {
+            window.location.reload(true);
+        }
+    };
+}
+
+// Botón de actualización en menú principal (pequeño)
+if (document.getElementById('btn-check-update-main')) {
+    document.getElementById('btn-check-update-main').onclick = () => {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then((regs) => {
                 Promise.all(regs.map(r => r.unregister())).then(() => {
@@ -1589,7 +1608,7 @@ function animate(time) {
             player.lastAttackFrameTime = time; 
             player.damageDealt = false;
             player.iceProjectileSpawned = false;
-            
+
             if (player.attackKind === 'ice_charge') {
                 currentSprite = iceSprites.charge;
                 currentFrame = 0;
@@ -1833,7 +1852,7 @@ if (clearedLevels.length > 0) document.getElementById('btn-continue').removeAttr
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       // Registramos con un parámetro de versión para forzar re-evaluación del SW
-      const swUrl = './service-worker.js?v=1.11';
+      const swUrl = './service-worker.js?v=1.12';
 
       navigator.serviceWorker.register(swUrl)
         .then((registration) => {
