@@ -183,7 +183,7 @@
 </head>
 <body>
     <!-- Etiqueta de versión de prueba: cambiar SOLO el texto de acá en cada build -->
-    <div id="test-version-label" style="position:fixed; top:4px; left:6px; z-index:9999; font-family:sans-serif; font-size:11px; color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; pointer-events:none;">Test v1.12</div>
+    <div id="test-version-label" style="position:fixed; top:4px; left:6px; z-index:9999; font-family:sans-serif; font-size:11px; color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; pointer-events:none;">Test v1.13</div>
     <div id="game-container">
         <div id="canvas-wrapper">
             <canvas id="gameCanvas"></canvas>
@@ -208,7 +208,7 @@
                 <div class="menu-title" style="font-size:clamp(24px,5vw,44px);margin-bottom:12px;">PAUSA</div>
                 <div class="story-box" style="max-width:340px;padding:14px;margin-bottom:12px;font-size:clamp(12px,2vw,15px);">
                     <p style="margin:0;">El destino de Lin Kuei descansa en tus manos...</p>
-                    <p style="margin-top:6px;font-size:0.8em;color:#4ecca3;">Versión: Test v1.12</p>
+                    <p style="margin-top:6px;font-size:0.8em;color:#4ecca3;">Versión: Test v1.13</p>
                 </div>
                 <button class="menu-btn" id="btn-resume" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);">Continuar</button>
                 <button class="menu-btn" id="btn-save" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);">Guardar Progreso</button>
@@ -218,13 +218,15 @@
 
             <!-- Menú Principal -->
             <div class="menu-overlay" id="main-menu">
-                <div class="menu-title">SUB-ZERO</div>
-                <div class="menu-subtitle">ADVENTURE</div>
-                <button class="menu-btn" id="btn-new-game">Nueva Partida</button>
-                <button class="menu-btn" id="btn-continue" disabled>Continuar</button>
-                <button class="menu-btn" id="btn-select-level">Seleccionar Nivel</button>
-                <button class="menu-btn" id="btn-how-to-play">Como Jugar</button>
-                <button class="menu-btn" id="btn-check-update-main" style="margin-top:10px;padding:6px 16px;font-size:clamp(10px,1.8vw,12px);background:rgba(241,196,15,0.1);border-color:rgba(241,196,15,0.4);color:#f1c40f;opacity:0.8;">🔄 Buscar Actualización</button>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;max-width:360px;padding:0 16px;">
+                    <div class="menu-title" style="margin-bottom:2px;">SUB-ZERO</div>
+                    <div class="menu-subtitle" style="margin-bottom:14px;">ADVENTURE</div>
+                    <button class="menu-btn" id="btn-new-game" style="width:100%;max-width:280px;padding:10px 20px;font-size:clamp(12px,2.2vw,15px);">Nueva Partida</button>
+                    <button class="menu-btn" id="btn-continue" disabled style="width:100%;max-width:280px;padding:10px 20px;font-size:clamp(12px,2.2vw,15px);">Continuar</button>
+                    <button class="menu-btn" id="btn-select-level" style="width:100%;max-width:280px;padding:10px 20px;font-size:clamp(12px,2.2vw,15px);">Seleccionar Nivel</button>
+                    <button class="menu-btn" id="btn-how-to-play" style="width:100%;max-width:280px;padding:10px 20px;font-size:clamp(12px,2.2vw,15px);">Como Jugar</button>
+                    <button class="menu-btn" id="btn-check-update-main" style="margin-top:8px;padding:5px 14px;font-size:clamp(9px,1.6vw,11px);background:rgba(241,196,15,0.08);border-color:rgba(241,196,15,0.3);color:#f1c40f;opacity:0.7;width:auto;min-width:unset;">🔄 Buscar Actualización</button>
+                </div>
             </div>
 
             <!-- Selección de Nivel -->
@@ -1852,7 +1854,7 @@ if (clearedLevels.length > 0) document.getElementById('btn-continue').removeAttr
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       // Registramos con un parámetro de versión para forzar re-evaluación del SW
-      const swUrl = './service-worker.js?v=1.12';
+      const swUrl = './service-worker.js?v=1.13';
 
       navigator.serviceWorker.register(swUrl)
         .then((registration) => {
