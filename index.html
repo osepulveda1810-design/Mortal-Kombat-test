@@ -45,7 +45,6 @@
         }
         .menu-subtitle { font-size: clamp(12px, 2.5vw, 18px); color: #4ecca3; margin-bottom: 30px; opacity: 0.8; }
 
-        /* Botones del menú más pequeños */
         .menu-btn {
             padding: 10px 28px; margin: 6px; font-size: clamp(12px, 2.5vw, 16px);
             background: rgba(78, 204, 163, 0.1); border: 2px solid rgba(78, 204, 163, 0.4);
@@ -143,7 +142,6 @@
         #btn-kick:active .boot-icon, #btn-kick.active .boot-icon { transform: scale(0.95) rotate(-3deg);
             filter: drop-shadow(0 0 10px rgba(160,230,255,1)) drop-shadow(0 0 4px #fff); }
 
-        /* NUEVO ESTILO PARA BOTÓN DE HIELO */
         #btn-ice {
             width: 60px; height: 60px; border-radius: 50%; padding: 0;
             background: radial-gradient(circle, rgba(0, 150, 255, 0.1) 0%, rgba(0, 100, 200, 0.2) 100%);
@@ -179,14 +177,12 @@
             #btn-jump { width: 65px; height: 65px; }
             .attack-group { max-width: 190px; gap: 5px; }
         }
-    
-        /* Estilos defensivos: evitan que los botones se agranden al recargar */
+
         #main-menu .menu-btn, #pause-screen .menu-btn {
             box-sizing: border-box;
             flex-shrink: 0;
         }
 
-        /* Estilos para botones de esquina del menú principal */
         #btn-help-corner:hover, #btn-help-corner:active {
             background: rgba(160,230,255,0.25) !important;
             border-color: rgba(160,230,255,0.8) !important;
@@ -197,11 +193,10 @@
             border-color: rgba(241,196,15,0.8) !important;
             transform: scale(1.05);
         }
-</style>
+    </style>
 </head>
 <body>
-    <!-- Etiqueta de versión de prueba: cambiar SOLO el texto de acá en cada build -->
-    <div id="test-version-label" style="position:fixed; top:4px; left:6px; z-index:9999; font-family:sans-serif; font-size:11px; color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; pointer-events:none;">Test v1.20</div>
+    <div id="test-version-label" style="position:fixed; top:4px; left:6px; z-index:9999; font-family:sans-serif; font-size:11px; color:#fff; background:rgba(0,0,0,0.5); padding:2px 6px; border-radius:4px; pointer-events:none;">Test v1.21</div>
     <div id="game-container">
         <div id="canvas-wrapper">
             <canvas id="gameCanvas"></canvas>
@@ -217,7 +212,6 @@
                     <span class="hud-text">BOSS</span>
                     <div class="hud-bar"><div class="hud-bar-fill" id="boss-hp" style="width:100%;background:#e74c3c;"></div></div>
                 </div>
-                <!-- Botón de Pausa -->
                 <button class="btn" id="btn-pause" style="width:44px;height:44px;font-size:18px;font-weight:bold;background:rgba(20,30,50,0.8);border-color:rgba(255,255,255,0.2);pointer-events:auto;position:absolute;right:10px;top:10px;z-index:25;padding:0;border-radius:8px;line-height:1;">⏸</button>
             </div>
 
@@ -226,7 +220,7 @@
                 <div class="menu-title" style="font-size:clamp(24px,5vw,44px);margin-bottom:12px;">PAUSA</div>
                 <div class="story-box" style="max-width:340px;padding:14px;margin-bottom:12px;font-size:clamp(12px,2vw,15px);">
                     <p style="margin:0;">El destino de Lin Kuei descansa en tus manos...</p>
-                    <p style="margin-top:6px;font-size:0.8em;color:#4ecca3;">Versión: Test v1.20</p>
+                    <p style="margin-top:6px;font-size:0.8em;color:#4ecca3;">Versión: Test v1.21</p>
                 </div>
                 <button class="menu-btn" id="btn-resume" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);">Continuar</button>
                 <button class="menu-btn" id="btn-save" style="max-width:260px;padding:8px 22px;font-size:clamp(11px,2vw,14px);">Guardar Progreso</button>
@@ -429,6 +423,21 @@ function saveProgress() {
     catch(e) {}
 }
 
+// FUNCIÓN CENTRALIZADA PARA VOLVER AL MENÚ PRINCIPAL
+function goToMainMenu() {
+    // Ocultar HUD y controles
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('controls').style.display = 'none';
+    // Cambiar estado
+    currentState = GameState.MENU;
+    // Mostrar menú principal
+    showMenu('main-menu');
+    // Detener cualquier ataque o proyectil
+    player.isAttacking = false;
+    player.attackKind = null;
+    attachedIceProjectile = null;
+}
+
 const playerSprites = {
     idle: new Image(), walk: new Image(), jump: new Image(), kick: new Image(),
     kick2: new Image(), punch: new Image(), punch2: new Image(), punchAir: new Image(), kickAir: new Image()
@@ -439,7 +448,6 @@ playerSprites.kick2.src = 'assets/sprites/player/kick_subzero2.png'; playerSprit
 playerSprites.punch2.src = 'assets/sprites/player/punch_subzero2.png'; playerSprites.punchAir.src = 'assets/sprites/player/punch_air.png';
 playerSprites.kickAir.src = 'assets/sprites/player/kick_air.png';
 
-// NUEVOS SPRITES DE HIELO
 const iceSprites = {
     charge: new Image(), throw: new Image(), proj: new Image(), hit: new Image()
 };
@@ -479,15 +487,11 @@ const frameOffsets = { idle: [0,0,0,0], walk: [0,0,0,0], jump: [0,0,0,0], kick: 
 const cropAdjusts = { punch: {x:[0,0,0,0], w:[0,-5,-5,-5]}, punch2: {x:[0,0,6,0], w:[0,0,-28,-35]}, punchAir: {x:[0,0,0,0], w:[14,0,0,0]}, kickAir: {x:[-4,0,0,0], w:[28,0,0,0]} };
 const customScales = { punch: 1.0, punch2: 1.0, kick: 1.0, kick2: 1.0, punchAir: 1.0, kickAir: 1.0 };
 const verticalOffsets = { punch: 0, punch2: 0, kick: 0, kick2: 0, punchAir: 0, kickAir: 0 };
-// Ajustes finos para que subzero_ice_charge / subzero_ice1 / subzero_ice2 calcen con el sprite idle.
-// Mismo esquema que customScales/verticalOffsets de arriba: si al probar en el navegador ves que
-// el personaje "salta" al entrar o salir del ataque de hielo, ajusta estos 3 valores por fase.
 const iceCustomScales = { ice_charge: 1.0, ice_throw: 1.0, ice_follow: 1.0 };
 const iceOffsets = { ice_charge: 0, ice_throw: -90, ice_follow: -90 };
 const iceVerticalOffsets = { ice_charge: 0, ice_throw: 0, ice_follow: 0 };
 const airSourceFrames = { punchAir: 0, kickAir: 1 };
 
-// Limite maximo de enemigos activos para evitar sobrecarga
 const MAX_ACTIVE_ENEMIES = 4;
 
 function setupCanvas() {
@@ -540,7 +544,6 @@ function spawnProjectile(x, y, tx, ty, damage, speed, color, owner, type) {
     projectiles.push({ x, y, vx: (dx/mag)*speed, vy: (dy/mag)*speed, damage, color, owner, type, life: 3000, size: 6 });
 }
 
-// Variable para el proyectil de hielo "attached" durante la animación de lanzamiento
 let attachedIceProjectile = null;
 
 function spawnAttachedIceProjectile(x, y) {
@@ -556,8 +559,6 @@ function spawnAttachedIceProjectile(x, y) {
     };
 }
 
-// Busca el enemigo objetivo SOLO en la dirección hacia la que mira el personaje.
-// Si no hay ninguno en esa dirección, devuelve null (el proyectil ira recto hacia donde mira).
 function findIceTargetInFacingDirection() {
     if (!attachedIceProjectile) return null;
     const facingDir = player.facingRight ? 1 : -1;
@@ -588,17 +589,11 @@ function findIceTargetInFacingDirection() {
     return target;
 }
 
-// Se llama al pasar de subzero_ice1 (mano cerca) a subzero_ice2 (follow-through).
-// Fija de una vez la direccion que seguira el proyectil durante toda la fase 2 y el vuelo libre.
-// Si el personaje mira a la izquierda pero no hay enemigo a la izquierda, la direccion
-// sigue siendo estrictamente hacia la izquierda (nunca se "engancha" a un enemigo detras).
 function lockIceProjectileTrajectory() {
     if (!attachedIceProjectile) return;
     const facingDir = player.facingRight ? 1 : -1;
     const target = findIceTargetInFacingDirection();
 
-    // SIEMPRE dispara hacia donde mira el personaje, independientemente de enemigos.
-    // Si hay un enemigo en esa dirección, apunta hacia él ajustando la componente vertical.
     let dirX = facingDir;
     let dirY = 0;
     if (target) {
@@ -607,13 +602,9 @@ function lockIceProjectileTrajectory() {
         const ddx = tx - attachedIceProjectile.x;
         const ddy = ty - attachedIceProjectile.y;
         const mag = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
-        // Componente Y: apuntar hacia el enemigo (arriba/abajo)
         dirY = ddy / mag;
-        // Componente X: siempre hacia donde mira, nunca en contra.
-        // Usamos la proporción del ángulo pero forzamos el signo correcto.
         const rawDirX = ddx / mag;
         dirX = Math.abs(rawDirX) * facingDir;
-        // Garantizar mínimo componente horizontal para que siempre se vea el alejamiento
         const minHoriz = 0.65;
         if (Math.abs(dirX) < minHoriz) {
             dirX = facingDir * minHoriz;
@@ -634,11 +625,8 @@ function releaseAttachedProjectile() {
         attachedIceProjectile.attached = false;
         const speed = 5.5;
         const facingDir = player.facingRight ? 1 : -1;
-        // Usa la trayectoria ya bloqueada en lockIceProjectileTrajectory().
-        // Si por algún motivo no se bloqueó antes, dispara estrictamente hacia donde mira.
         const dirX = (attachedIceProjectile.dirX !== undefined) ? attachedIceProjectile.dirX : facingDir;
         const dirY = (attachedIceProjectile.dirY !== undefined) ? attachedIceProjectile.dirY : 0;
-        // Doble verificación: nunca permitir que vx tenga dirección opuesta a facingDir
         const safeDirX = (dirX * facingDir >= 0) ? dirX : facingDir;
 
         projectiles.push({
@@ -663,7 +651,6 @@ function updateAttachedProjectile(dt) {
     }
     if (attachedIceProjectile.attached && !attachedIceProjectile.released) {
         if (player.attackKind === 'ice_throw') {
-            // Fase 1 (subzero_ice1.png): el proyectil sigue pegado a la mano
             const depthRatio = (laneBottom - playerLaneY) / Math.max(1, laneBottom - laneTop);
             const perspectiveScale = 1 - depthRatio * 0.15;
             const iceScale = player.scale * perspectiveScale;
@@ -675,8 +662,6 @@ function updateAttachedProjectile(dt) {
             const handRelY = 0.42;
             attachedIceProjectile.y = playerLaneY + baseDrawHeight - spriteH + (spriteH * handRelY);
         } else if (player.attackKind === 'ice_follow' && attachedIceProjectile.dirX !== undefined) {
-            // Fase 2 (subzero_ice2.png): se aleja del personaje siguiendo la trayectoria
-            // ya fijada en lockIceProjectileTrajectory (hacia el enemigo, o hacia donde mira si no hay ninguno)
             const progress = Math.min(1, player.attackTimer / 150);
             const pushOut = progress * 55;
             attachedIceProjectile.x = attachedIceProjectile.baseX + attachedIceProjectile.dirX * pushOut;
@@ -725,7 +710,6 @@ function createBoss(bossName, x, laneY) {
 
 function startLevel(levelIndex) {
     currentLevel = levelIndex;
-    // Ocultar botones de esquina al iniciar nivel
     const helpBtn = document.getElementById('btn-help-corner');
     const updateBtn = document.getElementById('btn-update-corner');
     if (helpBtn) helpBtn.style.display = 'none';
@@ -761,7 +745,6 @@ function spawnBoss() {
     spawnFloatingText(canvas.width/2, canvas.height/3, '!' + lvl.boss + ' APARECE!', '#ffd700');
 }
 
-// Lógica para crear el proyectil de hielo y apuntar al enemigo
 function spawnProjectileIce(x, y) {
     let target = null;
     let minDist = Infinity;
@@ -1052,8 +1035,6 @@ function lightenColor(hex, percent) {
     return 'rgb(' + R + ',' + G + ',' + B + ')';
 }
 
-// Efecto PLACEHOLDER de congelación: tiñe de azul al personaje mientras e.frozen/boss.frozen > 0.
-// TODO: reemplazar por un sprite real de "personaje congelado" cuando esté disponible.
 function drawFrozenTint(ctx, x, y, w, h) {
     ctx.save();
     ctx.globalAlpha = 0.6 + Math.sin(performance.now() / 150) * 0.15;
@@ -1095,7 +1076,6 @@ function drawEnemy(ctx, e, time) {
     if (e.ethereal) ctx.globalAlpha = 0.5 + Math.sin(time / 300) * 0.3;
     ctx.restore();
 
-    // EFECTO DE CONGELACIÓN: tinte azul placeholder (ver drawFrozenTint)
     if (e.frozen > 0) {
         drawFrozenTint(ctx, x, y, w, h);
     }
@@ -1152,12 +1132,10 @@ function drawProjectiles(ctx) {
             const pulse = 0.85 + Math.sin(performance.now()/80)*0.15;
             if (p.sprite && p.sprite.complete) {
                 ctx.translate(p.x, p.y);
-                // Voltear el sprite si va hacia la izquierda
                 if (p.vx < 0) ctx.scale(-1, 1);
                 const w = p.sprite.width * pulse;
                 const h = p.sprite.height * pulse;
                 ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
-                // Brillo adicional
                 ctx.globalCompositeOperation = 'screen';
                 ctx.globalAlpha = 0.3 + Math.sin(performance.now()/60)*0.2;
                 ctx.drawImage(p.sprite, -w/2, -h/2, w, h);
@@ -1227,7 +1205,6 @@ function drawPlayer(ctx, time) {
     const drawX = Math.round(player.x);
     const drawY = Math.round(player.y + baseDrawHeight - drawHeight);
 
-    // SPRITES DE HIELO
     if (player.isAttacking) {
         const atk = player.attackKind;
         if (atk === 'ice_charge' || atk === 'ice_throw' || atk === 'ice_follow') {
@@ -1241,9 +1218,6 @@ function drawPlayer(ctx, time) {
             }
 
             let srcW = iceImg.width, srcH = iceImg.height;
-            // Mismo esquema de anclaje que punch/kick: se escala respecto a baseDrawHeight y se
-            // ancla por los pies (base) y por el lado en el que mira el personaje, en vez de
-            // centrarlo — así no "salta" al pasar de/hacia el sprite idle.
             const aspectScale = (baseDrawHeight / srcH) * iceCustomScales[atk];
             const finalW = Math.round(srcW * aspectScale * perspectiveScale);
             const finalH = Math.round(srcH * aspectScale * perspectiveScale);
@@ -1397,7 +1371,6 @@ function showMenu(menuId) {
         const target = document.getElementById(menuId);
         if (target) target.classList.remove('hidden');
     }
-    // Mostrar/ocultar botones de esquina solo en el menú principal
     const helpBtn = document.getElementById('btn-help-corner');
     const updateBtn = document.getElementById('btn-update-corner');
     if (helpBtn) helpBtn.style.display = (menuId === 'main-menu' || menuId === 'none') ? 'block' : 'none';
@@ -1544,15 +1517,8 @@ document.getElementById('btn-save').onclick = () => {
     spawnFloatingText(canvas.width/2, canvas.height/2, 'PROGRESO GUARDADO!', '#4ecca3');
     togglePause();
 };
-document.getElementById('btn-quit').onclick = (e) => {
-    e.preventDefault();
-    document.getElementById('hud').style.display = 'none';
-    document.getElementById('controls').style.display = 'none';
-    showMenu('main-menu');
-    currentState = GameState.MENU;
-};
 
-// Botón de actualización en menú de pausa
+// BOTÓN DE ACTUALIZACIÓN EN PAUSA
 if (document.getElementById('btn-check-update')) {
     document.getElementById('btn-check-update').onclick = () => {
         const doReload = () => {
@@ -1574,14 +1540,14 @@ if (document.getElementById('btn-check-update')) {
     };
 }
 
-// Botón de Ayuda en esquina inferior izquierda del menú principal
+// BOTÓN DE AYUDA (esquina)
 if (document.getElementById('btn-help-corner')) {
     document.getElementById('btn-help-corner').onclick = () => {
         showMenu('how-to-play');
     };
 }
 
-// Botón de Actualizar en esquina inferior derecha del menú principal
+// BOTÓN DE ACTUALIZACIÓN (esquina)
 if (document.getElementById('btn-update-corner')) {
     document.getElementById('btn-update-corner').onclick = () => {
         const doReload = () => {
@@ -1603,7 +1569,7 @@ if (document.getElementById('btn-update-corner')) {
     };
 }
 
-// ─── BOTONES DE MENU ───
+// ─── BOTONES DE MENÚ ───
 document.getElementById('btn-new-game').onclick = () => {
     unlockedLevels = 1; clearedLevels = []; score = 0; saveProgress();
     showStory(0);
@@ -1614,17 +1580,6 @@ document.getElementById('btn-continue').onclick = () => {
 };
 document.getElementById('btn-select-level').onclick = () => {
     buildLevelSelect(); showMenu('level-select-menu');
-};
-document.getElementById('btn-how-to-play').onclick = () => showMenu('how-to-play');
-document.getElementById('btn-back-main').onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showMenu('main-menu');
-};
-document.getElementById('btn-back-how').onclick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    showMenu('main-menu');
 };
 document.getElementById('btn-start-level').onclick = () => {
     showMenu('none');
@@ -1639,13 +1594,61 @@ document.getElementById('btn-next-level').onclick = () => {
         showStory(currentLevel + 1);
     }
 };
-document.getElementById('btn-menu').onclick = (e) => {
-    e.preventDefault();
+
+// ─── BOTONES DE VOLVER (CORREGIDOS) ───
+function goToMainMenu() {
     document.getElementById('hud').style.display = 'none';
     document.getElementById('controls').style.display = 'none';
-    showMenu('main-menu');
     currentState = GameState.MENU;
-};
+    showMenu('main-menu');
+    player.isAttacking = false;
+    player.attackKind = null;
+    attachedIceProjectile = null;
+}
+
+// Volver desde selección de nivel
+document.getElementById('btn-back-main').addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    goToMainMenu();
+});
+document.getElementById('btn-back-main').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    goToMainMenu();
+});
+
+// Volver desde ayuda
+document.getElementById('btn-back-how').addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    goToMainMenu();
+});
+document.getElementById('btn-back-how').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    goToMainMenu();
+});
+
+// Menú Principal desde resultados
+document.getElementById('btn-menu').addEventListener('click', function(e) {
+    e.preventDefault();
+    goToMainMenu();
+});
+document.getElementById('btn-menu').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    goToMainMenu();
+});
+
+// Salir al Menú desde pausa
+document.getElementById('btn-quit').addEventListener('click', function(e) {
+    e.preventDefault();
+    goToMainMenu();
+});
+document.getElementById('btn-quit').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    goToMainMenu();
+});
 
 // ─── BUCLE PRINCIPAL ───
 function animate(time) {
@@ -1724,37 +1727,26 @@ function animate(time) {
                     player.attackTimer = 0;
                 }
             } else if (player.attackKind === 'ice_throw') {
-                // Fase 1: subzero_ice1.png - la mano se extiende
-                // El proyectil aparece cerca de la mano a los 60ms
                 if (player.attackTimer > 60 && !player.iceProjectileSpawned) {
                     player.iceProjectileSpawned = true;
-                    // Posición exacta de la mano en subzero_ice1.png, alineada con el sprite dibujado
                     const depthRatio = (laneBottom - playerLaneY) / Math.max(1, laneBottom - laneTop);
                     const perspectiveScale = 1 - depthRatio * 0.15;
                     const iceScale = player.scale * perspectiveScale;
                     const spriteW = 536 * iceScale;
                     const spriteH = 369 * iceScale;
                     const offsetX = iceOffsets['ice_throw'] * player.scale;
-                    // La mano está al ~93% del ancho del sprite (x≈500 en imagen de 536px)
                     const handRelX = player.facingRight ? 0.93 : 0.07;
                     const projX = player.x + offsetX + (spriteW * handRelX);
-                    // Altura de la mano: ~42% desde arriba del sprite
                     const handRelY = 0.42;
                     const projY = playerLaneY + baseDrawHeight - spriteH + (spriteH * handRelY);
                     spawnAttachedIceProjectile(projX, projY);
                 }
                 if (player.attackTimer > 200) {
-                    // Pasa a follow-through: fija la trayectoria (hacia el enemigo, o hacia
-                    // donde mira el personaje si no hay ninguno en esa dirección) pero el
-                    // proyectil sigue "pegado" visualmente, alejándose poco a poco en subzero_ice2.png
                     lockIceProjectileTrajectory();
                     player.attackKind = 'ice_follow';
                     player.attackTimer = 0;
                 }
             } else if (player.attackKind === 'ice_follow') {
-                // Fase 2: subzero_ice2.png - follow-through, proyectil se aleja más
-                // manteniendo la trayectoria fijada, y al terminar la animación se suelta
-                // como proyectil libre que viaja hasta el enemigo (o hasta el borde si no hay ninguno)
                 if (player.attackTimer > 150) {
                     releaseAttachedProjectile();
                     player.isAttacking = false;
@@ -1910,26 +1902,22 @@ if (clearedLevels.length > 0) document.getElementById('btn-continue').removeAttr
   // ─── Service Worker con detección de actualizaciones ───
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      // Registramos con un parámetro de versión para forzar re-evaluación del SW
-      const swUrl = './service-worker.js?v=1.20';
+      const swUrl = './service-worker.js?v=1.21';
 
       navigator.serviceWorker.register(swUrl)
         .then((registration) => {
           console.log('SW registrado:', registration.scope);
 
-          // Escuchar cuando llega un nuevo service worker
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Hay una nueva versión lista. Forzar recarga para usarla.
                 console.log('Nueva versión disponible. Recargando...');
                 window.location.reload();
               }
             });
           });
 
-          // Verificar actualizaciones periódicamente (cada 5 minutos)
           setInterval(() => {
             registration.update();
           }, 5 * 60 * 1000);
@@ -1937,7 +1925,6 @@ if (clearedLevels.length > 0) document.getElementById('btn-continue').removeAttr
         .catch((err) => console.error('Error registrando el service worker:', err));
     });
 
-    // Detectar cuando un nuevo SW toma control (primera instalación o update)
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('Nuevo SW activo. Página recargada automáticamente.');
     });
