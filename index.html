@@ -409,13 +409,13 @@ const iceAdjustments = {
     ice_charge: {
         scale: 0.85,       // Escala base del sprite
         widthMult: 3.5,    // v1.30: Multiplicador de ancho (el sprite de hielo es más ancho que idle)
-        offsetX: 0,        // Desplazamiento horizontal (positivo = derecha)
+        offsetX: -90,        // Desplazamiento horizontal (positivo = derecha)
         offsetY: 0         // Desplazamiento vertical (positivo = abajo)
     },
     ice_throw: {
         scale: 0.85,
         widthMult: 3.5,    // v1.30: Pose de lanzamiento requiere más ancho
-        offsetX: 0,
+        offsetX: -90,
         offsetY: 0,
         // El proyectil sale de la mano. Ajusta estos valores para que la bola salga de la palma.
         handAnchorX: 0.65, // Posición horizontal de la mano (0=izq, 1=der)
@@ -424,7 +424,7 @@ const iceAdjustments = {
     ice_follow: {
         scale: 0.85,
         widthMult: 3.5,    // v1.30: Mismo ancho que throw
-        offsetX: 0,
+        offsetX: -90,
         offsetY: 0
     }
 };
