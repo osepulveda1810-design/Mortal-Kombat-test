@@ -1,14 +1,6 @@
 {
-  "version": "1.40",
-  "build": 40,
-  "name": "CLEAN FIX - INTRO + CACHE",
-  "date": "2026-05-13",
-  "repo": "osepulveda1810-design/sub-zero_adventure",
-  "pages": "https://osepulveda1810-design.github.io/sub-zero_adventure/",
-  "notes": "Fix definitivo intro pegado: safety net 2.5s garantizado, hideSplash robusto, service worker network-first, buildNum fix, no más BUILD 0",
-  "fixes": [
-    "Intro pegado fix",
-    "BUILD 0 fix",
-    "Cache fix"
-  ]
+  "version": "1.41",
+  "build": 41,
+  "name": "FIX INTRO DEFINITIVO - CLEAN",
+  "notes": "Fix definitivo: sin duplicados, safety net 2.5s, BUILD 0 arreglado, service worker simple"
 }
