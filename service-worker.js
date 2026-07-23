@@ -1,4 +1,4 @@
-const CACHE_NAME = 'subzero-v1-43-buttons-fix';
+const CACHE_NAME = 'subzero-v1-45-final';
 self.addEventListener('install', e=>{ self.skipWaiting(); });
 self.addEventListener('activate', e=>{
   e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
