@@ -1,6 +1,6 @@
 {
-  "version": "1.41",
-  "build": 41,
-  "name": "FIX INTRO DEFINITIVO - CLEAN",
-  "notes": "Fix definitivo: sin duplicados, safety net 2.5s, BUILD 0 arreglado, service worker simple"
+  "version": "1.42",
+  "build": 42,
+  "name": "NO INTRO - Directo al menú",
+  "notes": "Intro eliminada completamente, directo al menú con copo visible, fix definitivo pegado"
 }
