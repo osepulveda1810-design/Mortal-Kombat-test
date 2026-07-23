@@ -1,15 +1,14 @@
 {
-  "version": "1.39",
-  "build": 35,
-  "name": "FIX CACHE + INTRO PEGADO",
+  "version": "1.40",
+  "build": 40,
+  "name": "CLEAN FIX - INTRO + CACHE",
   "date": "2026-05-13",
   "repo": "osepulveda1810-design/sub-zero_adventure",
   "pages": "https://osepulveda1810-design.github.io/sub-zero_adventure/",
-  "notes": "Fix: service worker network-first para index/version.json, ya no hay que borrar datos manualmente. Fix: intro pegada - safety net que fuerza hide splash a los 3.5s aunque fallen sprites. Build num robusto.",
+  "notes": "Fix definitivo intro pegado: safety net 2.5s garantizado, hideSplash robusto, service worker network-first, buildNum fix, no más BUILD 0",
   "fixes": [
-    "PWA cache: network-first para index.html y version.json",
-    "Intro pegada: timeout de seguridad 3.5s",
-    "Build 0 fix: localStorage protegido",
-    "Update checker: 404 ya no es error"
+    "Intro pegado fix",
+    "BUILD 0 fix",
+    "Cache fix"
   ]
 }
