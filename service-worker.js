@@ -1,5 +1,4 @@
-// v1.42 NO INTRO - No cachea index
-const CACHE_NAME = 'subzero-v1-42-no-intro';
+const CACHE_NAME = 'subzero-v1-43-buttons-fix';
 self.addEventListener('install', e=>{ self.skipWaiting(); });
 self.addEventListener('activate', e=>{
   e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
