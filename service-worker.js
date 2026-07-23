@@ -1,66 +1,51 @@
-// Sub-Zero v1.39 - FIX CACHE - Network first for HTML/JSON
-const CACHE_NAME = 'subzero-v1-39-fix-cache-intro';
+// v1.40 CLEAN - Network first for critical files
+const CACHE_NAME = 'subzero-v1-40-clean';
 const CACHE_ASSETS = [
   './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-maskable-192.png',
-  './icons/icon-maskable-512.png'
+  './icons/icon-512.png'
 ];
 
 self.addEventListener('install', e=>{
-  console.log('SW v1.39 installing');
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(c=>c.addAll(CACHE_ASSETS).catch(()=>{})).then(()=>self.skipWaiting())
-  );
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(CACHE_ASSETS).catch(()=>{})));
 });
 
 self.addEventListener('activate', e=>{
-  console.log('SW v1.39 activating');
   e.waitUntil(
-    caches.keys().then(keys=>Promise.all(
-      keys.filter(k=>k!==CACHE_NAME).map(k=>{
-        console.log('Deleting old cache',k);
-        return caches.delete(k);
-      })
-    )).then(()=>self.clients.claim())
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
+      .then(()=>self.clients.claim())
   );
 });
 
 self.addEventListener('message', e=>{
-  if(e.data && e.data.type==='SKIP_WAITING'){
-    self.skipWaiting();
-  }
+  if(e.data && e.data.type==='SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e=>{
-  const url = new URL(e.request.url);
+  const req = e.request;
+  const url = new URL(req.url);
   
-  // NETWORK FIRST for these critical files - nunca cachear viejo
-  if(url.pathname.endsWith('index.html') || url.pathname.endsWith('/') || url.pathname.endsWith('version.json') || url.pathname.endsWith('manifest.json')){
+  // NEVER cache index.html, version.json, manifest.json - always network
+  if(url.pathname.endsWith('/') || url.pathname.includes('index.html') || url.pathname.endsWith('version.json') || url.pathname.endsWith('manifest.json')){
     e.respondWith(
-      fetch(e.request, {cache:'no-store'})
+      fetch(req, {cache:'no-store', headers:{'Cache-Control':'no-cache'}})
         .then(res=>{
-          // Guardar copia fresca
-          const clone=res.clone();
-          caches.open(CACHE_NAME).then(c=>c.put(e.request, clone));
+          if(res.ok){
+            const clone=res.clone();
+            caches.open(CACHE_NAME).then(c=>c.put(req, clone));
+          }
           return res;
         })
-        .catch(()=>caches.match(e.request).then(cached=>cached || caches.match('./index.html')))
+        .catch(()=>caches.match(req).then(r=>r || fetch(req)))
     );
     return;
   }
 
-  // Cache first for assets, but update in background
+  // For other assets, cache first
   e.respondWith(
-    caches.match(e.request).then(cached=>{
-      const fetchPromise=fetch(e.request).then(networkRes=>{
-        if(networkRes.ok){
-          caches.open(CACHE_NAME).then(c=>c.put(e.request, networkRes.clone()));
-        }
-        return networkRes;
-      }).catch(()=>cached);
-      
-      return cached || fetchPromise;
-    })
+    caches.match(req).then(cached=> cached || fetch(req).then(res=>{
+      if(res.ok) caches.open(CACHE_NAME).then(c=>c.put(req, res.clone()));
+      return res;
+    }).catch(()=>cached))
   );
 });
