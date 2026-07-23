@@ -22,7 +22,7 @@
 </script><script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Sub-Zero v1.33 PREMIUM - Historia + Sprites Reales</title>
+<title>Sub-Zero v1.33b PREMIUM - Historia + Sprites Reales</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 body{background:#050a14;display:flex;justify-content:center;align-items:center;height:100dvh;width:100vw;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;color:#fff;touch-action:none;position:fixed}
@@ -37,7 +37,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 .hud-box .label{font-size:8px;color:rgba(255,255,255,0.42);letter-spacing:2px}
 .hud-box .value{font-weight:800;color:#e0ffff;font-size:13px;margin-top:2px}
 #controls{position:absolute;bottom:22px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-end;z-index:45;pointer-events:none}
-.dpad{display:grid;grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px 50px;gap:7px;pointer-events:auto}
+.dpad{display:grid;grid-template-columns:56px 56px 56px;grid-template-rows:56px 56px 56px;gap:8px;pointer-events:auto}
 .dpad button{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14);border-radius:16px;color:#a0e6ff;font-size:15px;backdrop-filter:blur(12px);transition:all 0.08s;touch-action:manipulation}
 .dpad button:active{background:rgba(78,204,163,0.28);transform:scale(0.92)}
 .action-cross{display:grid;grid-template-columns:60px 60px 60px;grid-template-rows:60px 60px 60px;gap:12px;pointer-events:auto;place-items:center}
@@ -67,7 +67,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 </head>
 <body>
 <div id="game-container">
-<div id="top-bar"><div class="logo">SUB-ZERO</div><div style="display:flex;gap:10px;align-items:center"><div class="badge">v1.33 PREMIUM</div><div style="font-size:10px;color:rgba(255,255,255,0.52)">BUILD <span id="build-num">0</span> • SPRITES REALES</div></div></div>
+<div id="top-bar"><div class="logo">SUB-ZERO</div><div style="display:flex;gap:10px;align-items:center"><div class="badge">v1.33b PREMIUM</div><div style="font-size:10px;color:rgba(255,255,255,0.52)">BUILD <span id="build-num">0</span> • SPRITES REALES</div></div></div>
 <div id="canvas-wrapper">
 <canvas id="gameCanvas"></canvas>
 <div id="hud" style="display:none">
@@ -76,7 +76,7 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 <div class="hud-box"><div class="label">ENEMIGOS</div><div class="value" id="hud-enemies">0</div><div style="font-size:9px;color:rgba(255,255,255,0.5)" id="hud-score">0 pts</div></div>
 </div>
 <div id="controls" style="display:none">
-<div class="dpad"><div></div><button id="btn-up">▲</button><div></div><button id="btn-left">◀</button><button id="btn-down">▼</button><button id="btn-right">▶</button><div></div><button id="btn-up2">▲</button><div></div></div>
+<div class="dpad"><div></div><button id="btn-up">▲</button><div></div><button id="btn-left">◀</button><div></div><button id="btn-right">▶</button><div></div><button id="btn-down">▼</button><div></div></div>
 <div class="action-cross">
 <button class="btn" id="btn-ice">❄️</button>
 <button class="btn" id="btn-punch"><svg class="punch-icon" viewBox="0 0 100 100"><g fill="none" stroke="#a0e6ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 32 75 L 68 75 L 65 92 L 35 92 Z"/><path d="M 33 83 L 67 83" stroke-width="2"/><path d="M 32 75 C 10 65 8 35 28 18 C 45 3 70 8 78 28 C 82 38 82 48 78 55"/><path d="M 60 40 C 85 45 92 65 75 75 L 68 75 C 60 75 55 65 60 55"/><path d="M 45 22 C 38 40 48 62 65 68" stroke-width="2.5"/></g></svg></button>
@@ -85,11 +85,11 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 <button class="btn" id="btn-jump">SALTO</button>
 </div>
 </div>
-<div id="splash-overlay"><div id="splash-title">SNAKEBYTE STUDIOS</div><div style="color:#666;letter-spacing:6px;font-size:11px;margin-top:14px">v1.33 PREMIUM • SCROLLING + SPRITES REALES</div><div style="margin-top:18px;width:42px;height:42px;border:3px solid rgba(0,255,255,0.18);border-top-color:#0ff;border-radius:50%;animation:spin 1s linear infinite"></div></div>
+<div id="splash-overlay"><div id="splash-title">SNAKEBYTE STUDIOS</div><div style="color:#666;letter-spacing:6px;font-size:11px;margin-top:14px">v1.33b PREMIUM • SCROLLING + SPRITES REALES</div><div style="margin-top:18px;width:42px;height:42px;border:3px solid rgba(0,255,255,0.18);border-top-color:#0ff;border-radius:50%;animation:spin 1s linear infinite"></div></div>
 <div id="menu-main" class="menu-overlay">
 <div class="ice-demo"></div>
 <div class="menu-title">SUB-ZERO</div>
-<div style="color:#4ecca3;letter-spacing:5px;font-size:11px;margin-top:-6px;opacity:0.85">v1.33 PREMIUM • HISTORIA COMPLETA • SPRITES REALES</div>
+<div style="color:#4ecca3;letter-spacing:5px;font-size:11px;margin-top:-6px;opacity:0.85">v1.33b PREMIUM • HISTORIA COMPLETA • SPRITES REALES</div>
 <div style="font-size:10px;color:rgba(255,255,255,0.42);margin-top:10px;letter-spacing:1px">assets/sprites/player/ • 12 sprites • SCROLLING 3500→5600px • ICE 28px VISIBLE</div>
 <button class="btn-premium" id="btn-play">▶ JUGAR HISTORIA COMPLETA</button>
 <button class="btn-premium" id="btn-levels">NIVELES (8)</button>
@@ -100,9 +100,9 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 </div>
 </div>
 <script>
-// v1.33 PREMIUM - MOTOR RECREADO
-const GAME_VERSION="1.33";
-console.log("%c SUB-ZERO ADVENTURE v1.33 PREMIUM - HISTORIA + SPRITES REALES + SCROLLING + ICE FIX ","background:#001a33;color:#7ef0ff;font-size:16px;padding:10px 14px;border-radius:10px;border:1px solid #0ff");
+// v1.33b PREMIUM - MOTOR RECREADO
+const GAME_VERSION="1.33b";
+console.log("%c SUB-ZERO ADVENTURE v1.33b PREMIUM - HISTORIA + SPRITES REALES + SCROLLING + ICE FIX ","background:#001a33;color:#7ef0ff;font-size:16px;padding:10px 14px;border-radius:10px;border:1px solid #0ff");
 let buildNum=parseInt(localStorage.getItem('sz_build_v133')||'0')+1;
 localStorage.setItem('sz_build_v133',buildNum);
 document.getElementById('build-num').textContent=buildNum;
@@ -312,7 +312,7 @@ function drawPlayerPlaceholder(x,y,w,h){
   ctx.fillStyle='#4ecca3'; ctx.fillRect(x+w*0.22,y,w*0.56,h*0.16);
   ctx.fillStyle='#e0ffff'; ctx.fillRect(x+w*0.3,y+h*0.04,w*0.13,h*0.06); ctx.fillRect(x+w*0.58,y+h*0.04,w*0.13,h*0.06);
   ctx.fillStyle='rgba(160,230,255,0.9)'; ctx.font='bold 8px monospace'; ctx.fillText('SUB-ZERO',x+5,y+14);
-  ctx.fillStyle='rgba(78,204,163,0.8)'; ctx.font='7px monospace'; ctx.fillText('v1.33 PREMIUM',x+5,y+h-6);
+  ctx.fillStyle='rgba(78,204,163,0.8)'; ctx.font='7px monospace'; ctx.fillText('v1.33b PREMIUM',x+5,y+h-6);
 }
 
 function drawPlayer(time){
@@ -431,7 +431,7 @@ document.addEventListener('keyup',e=>{
 });
 
 function bind(id,dir){ const el=document.getElementById(id); if(!el) return; const down=()=>keys[dir]=true; const up=()=>keys[dir]=false; el.addEventListener('touchstart',e=>{e.preventDefault(); down();},{passive:false}); el.addEventListener('touchend',e=>{e.preventDefault(); up();},{passive:false}); el.addEventListener('mousedown',down); el.addEventListener('mouseup',up); el.addEventListener('mouseleave',up); }
-bind('btn-up','up'); bind('btn-up2','up'); bind('btn-down','down'); bind('btn-left','left'); bind('btn-right','right');
+bind('btn-up','up'); /* up2 removed */ bind('btn-down','down'); bind('btn-left','left'); bind('btn-right','right');
 
 document.getElementById('btn-ice').addEventListener('click',()=>{ if(!attachedIce){ attachedIce={x:player.x+54,y:playerLaneY,attached:true,life:5000}; spawnText(player.x,playerLaneY-30,'¡HIELO CARGADO!','#a0e6ff'); } else if(attachedIce.attached){ projectiles.push({x:attachedIce.x,y:attachedIce.y,vx:(player.facingRight?1:-1)*7.2,vy:0,owner:'player',type:'ice',life:3000}); attachedIce=null; } });
 document.getElementById('btn-punch').addEventListener('click',()=>{ player.isAttacking=true; player.attackKind='punch'; setTimeout(()=>player.isAttacking=false,260); });
