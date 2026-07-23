@@ -1,9 +1,9 @@
 {
-  "name": "Sub-Zero Adventure v1.38 PREMIUM",
+  "name": "Sub-Zero Adventure v1.39 PREMIUM",
   "short_name": "Sub-Zero",
-  "description": "Beat'em up MK - v1.38 fix 404 GitHub",
-  "version": "1.38",
-  "start_url": "./index.html",
+  "description": "v1.39 FIX CACHE + INTRO - Network first, no más borrar datos",
+  "version": "1.39",
+  "start_url": "./index.html?v=1.39",
   "scope": "./",
   "display": "standalone",
   "display_override": [
